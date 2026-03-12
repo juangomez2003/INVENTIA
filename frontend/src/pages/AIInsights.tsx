@@ -9,6 +9,16 @@ const trendData = [
   { day: 'Sem 4', pollo: 42, tomate: 18, carne: 25, camarones: 12 },
 ];
 
+const thStyle: React.CSSProperties = {
+  textAlign: 'left', fontSize: 11, fontWeight: 500,
+  color: 'rgba(255,255,255,0.3)', padding: '12px 20px',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '14px 20px',
+};
+
 export default function AIInsights() {
   const sortedPredictions = [...aiPredictions].sort((a, b) => a.daysRemaining - b.daysRemaining);
   const avgConfidence = Math.round(aiPredictions.reduce((acc, p) => acc + p.confidence, 0) / aiPredictions.length);
@@ -18,106 +28,106 @@ export default function AIInsights() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <Brain className="w-7 h-7 text-purple-400" />
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 12, letterSpacing: '-0.02em' }}>
+            <Brain style={{ width: 28, height: 28, color: '#c084fc' }} />
             IA Insights
           </h1>
-          <p className="text-sm text-white/40 mt-0.5">Predicciones y recomendaciones del agente de IA</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Predicciones y recomendaciones del agente de IA</p>
         </div>
-        <div className="glass px-4 py-2 rounded-xl flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs text-emerald-400 font-medium">Modelo activo</span>
+        <div className="glass" style={{ padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="pulse-glow" style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+          <span style={{ fontSize: 12, color: '#34d399', fontWeight: 500 }}>Modelo activo</span>
         </div>
       </div>
 
       {/* Quick AI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass p-5 rounded-2xl glow-purple">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-purple-400" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+        <div className="glass glow-purple" style={{ padding: 20, borderRadius: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(168,85,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap style={{ width: 20, height: 20, color: '#c084fc' }} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{avgConfidence}%</p>
-              <p className="text-xs text-white/40">Confianza promedio</p>
+              <p style={{ fontSize: 26, fontWeight: 700, color: 'white' }}>{avgConfidence}%</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Confianza promedio</p>
             </div>
           </div>
         </div>
-        <div className="glass p-5 rounded-2xl glow-pink">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
-              <TrendingDown className="w-5 h-5 text-red-400" />
+        <div className="glass glow-pink" style={{ padding: 20, borderRadius: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingDown style={{ width: 20, height: 20, color: '#f87171' }} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{sortedPredictions.filter(p => p.daysRemaining <= 2).length}</p>
-              <p className="text-xs text-white/40">Productos urgentes</p>
+              <p style={{ fontSize: 26, fontWeight: 700, color: 'white' }}>{sortedPredictions.filter(p => p.daysRemaining <= 2).length}</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Productos urgentes</p>
             </div>
           </div>
         </div>
-        <div className="glass p-5 rounded-2xl glow-cyan">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-cyan-400" />
+        <div className="glass glow-cyan" style={{ padding: 20, borderRadius: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(6,182,212,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShoppingCart style={{ width: 20, height: 20, color: '#22d3ee' }} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{aiPredictions.reduce((acc, p) => acc + p.restockRecommendation, 0)}</p>
-              <p className="text-xs text-white/40">Unidades sugeridas</p>
+              <p style={{ fontSize: 26, fontWeight: 700, color: 'white' }}>{aiPredictions.reduce((acc, p) => acc + p.restockRecommendation, 0)}</p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Unidades sugeridas</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Predictions Table + Confidence Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 glass rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/5">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-white/40" />
-              Predicciones de Consumo
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+        <div className="glass" style={{ borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: 20, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock style={{ width: 16, height: 16, color: 'rgba(255,255,255,0.4)' }} />
+              Predicciones de consumo
             </h3>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Producto</th>
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Stock</th>
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Consumo/día</th>
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Días restantes</th>
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Reposición</th>
-                  <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Confianza</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <th style={thStyle}>Producto</th>
+                  <th style={thStyle}>Stock</th>
+                  <th style={thStyle}>Consumo/día</th>
+                  <th style={thStyle}>Días restantes</th>
+                  <th style={thStyle}>Reposición</th>
+                  <th style={thStyle}>Confianza</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedPredictions.map((pred) => (
-                  <tr key={pred.product} className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors">
-                    <td className="px-5 py-3.5 text-sm font-medium text-white/90">{pred.product}</td>
-                    <td className="px-5 py-3.5 text-sm text-white/60">{pred.currentStock} {pred.unit}</td>
-                    <td className="px-5 py-3.5 text-sm text-white/60">{pred.dailyConsumption} {pred.unit}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-sm font-semibold ${
-                        pred.daysRemaining <= 1.5 ? 'text-red-400' :
-                        pred.daysRemaining <= 3 ? 'text-amber-400' : 'text-emerald-400'
-                      }`}>
+                  <tr key={pred.product} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}>
+                    <td style={{ ...tdStyle, fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{pred.product}</td>
+                    <td style={{ ...tdStyle, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{pred.currentStock} {pred.unit}</td>
+                    <td style={{ ...tdStyle, fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>{pred.dailyConsumption} {pred.unit}</td>
+                    <td style={tdStyle}>
+                      <span style={{
+                        fontSize: 13, fontWeight: 600,
+                        color: pred.daysRemaining <= 1.5 ? '#f87171' : pred.daysRemaining <= 3 ? '#fbbf24' : '#34d399',
+                      }}>
                         {pred.daysRemaining.toFixed(1)} días
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="flex items-center gap-1 text-sm text-cyan-400">
-                        <ArrowUpRight className="w-3 h-3" />
+                    <td style={tdStyle}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#22d3ee' }}>
+                        <ArrowUpRight style={{ width: 12, height: 12 }} />
                         {pred.restockRecommendation} {pred.unit}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-12 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-500" style={{ width: `${pred.confidence}%` }} />
+                    <td style={tdStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 48, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, #a855f7, #06b6d4)', width: `${pred.confidence}%` }} />
                         </div>
-                        <span className="text-xs text-white/40">{pred.confidence}%</span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{pred.confidence}%</span>
                       </div>
                     </td>
                   </tr>
@@ -128,39 +138,40 @@ export default function AIInsights() {
         </div>
 
         {/* Confidence Radial */}
-        <div className="glass p-5 rounded-2xl flex flex-col items-center justify-center">
-          <h3 className="text-base font-semibold text-white mb-4">Confianza del Modelo</h3>
-          <div className="w-48 h-48">
+        <div className="glass" style={{
+          padding: 24, borderRadius: 16,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 16 }}>Confianza del Modelo</h3>
+          <div style={{ width: 192, height: 192 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadialBarChart cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" data={confidenceData} startAngle={90} endAngle={-270}>
                 <RadialBar background={{ fill: 'rgba(255,255,255,0.05)' }} dataKey="value" cornerRadius={10} />
               </RadialBarChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-3xl font-bold text-white -mt-28">{avgConfidence}%</p>
-          <p className="text-xs text-white/30 mt-2">Precisión general</p>
+          <p style={{ fontSize: 30, fontWeight: 700, color: 'white', marginTop: -112 }}>{avgConfidence}%</p>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 8 }}>Precisión general</p>
 
-          <div className="w-full mt-8 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">Productos analizados</span>
-              <span className="text-white/70">{aiPredictions.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">Alertas generadas</span>
-              <span className="text-white/70">{aiAlerts.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white/40">Última actualización</span>
-              <span className="text-white/70">Hace 5 min</span>
-            </div>
+          <div style={{ width: '100%', marginTop: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              ['Productos analizados', aiPredictions.length],
+              ['Alertas generadas', aiAlerts.length],
+              ['Última actualización', 'Hace 5 min'],
+            ].map(([label, val]) => (
+              <div key={String(label)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
+                <span style={{ color: 'rgba(255,255,255,0.4)' }}>{label}</span>
+                <span style={{ color: 'rgba(255,255,255,0.7)' }}>{val}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Trend Chart */}
-      <div className="glass p-5 rounded-2xl">
-        <h3 className="text-base font-semibold text-white mb-4">Tendencia de Consumo por Producto (4 Semanas)</h3>
-        <div className="h-[300px]">
+      <div className="glass" style={{ padding: 24, borderRadius: 16 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 20 }}>Tendencia de Consumo por Producto (4 Semanas)</h3>
+        <div style={{ height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -186,12 +197,13 @@ export default function AIInsights() {
               <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{
-                  background: 'rgba(15, 12, 41, 0.9)',
+                  background: 'rgba(15, 12, 41, 0.95)',
                   border: '1px solid rgba(255,255,255,0.15)',
                   borderRadius: '12px',
                   backdropFilter: 'blur(20px)',
                   color: '#fff',
                   fontSize: '12px',
+                  padding: '10px 14px',
                 }}
               />
               <Area type="monotone" dataKey="pollo" name="Pollo" stroke="#a855f7" fill="url(#polloGrad)" strokeWidth={2} />

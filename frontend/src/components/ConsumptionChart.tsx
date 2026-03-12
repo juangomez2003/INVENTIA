@@ -7,9 +7,9 @@ interface ConsumptionChartProps {
 
 export default function ConsumptionChart({ data }: ConsumptionChartProps) {
   return (
-    <div className="glass p-5 rounded-2xl">
-      <h3 className="text-base font-semibold text-white mb-4">Consumo vs Reposición Semanal</h3>
-      <div className="h-[280px]">
+    <div className="glass" style={{ padding: 24, borderRadius: 16 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 20 }}>Consumo vs Reposición Semanal</h3>
+      <div style={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -27,15 +27,16 @@ export default function ConsumptionChart({ data }: ConsumptionChartProps) {
             <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={{
-                background: 'rgba(15, 12, 41, 0.9)',
+                background: 'rgba(15, 12, 41, 0.95)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '12px',
                 backdropFilter: 'blur(20px)',
                 color: '#fff',
                 fontSize: '12px',
+                padding: '10px 14px',
               }}
             />
-            <Legend wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }} />
+            <Legend wrapperStyle={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', paddingTop: 8 }} />
             <Area type="monotone" dataKey="consumed" name="Consumido" stroke="#a855f7" fill="url(#consumedGrad)" strokeWidth={2} />
             <Area type="monotone" dataKey="restocked" name="Repuesto" stroke="#06b6d4" fill="url(#restockedGrad)" strokeWidth={2} />
           </AreaChart>

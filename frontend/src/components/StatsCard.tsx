@@ -11,26 +11,38 @@ interface StatsCardProps {
 
 export default function StatsCard({ title, value, subtitle, icon, trend, glowClass = '' }: StatsCardProps) {
   return (
-    <div className={`glass p-5 rounded-2xl hover:bg-white/[0.08] transition-all duration-300 ${glowClass}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center border border-white/10">
+    <div
+      className={`glass ${glowClass}`}
+      style={{
+        padding: 20,
+        borderRadius: 16,
+        transition: 'all 0.3s',
+        cursor: 'default',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{
+          width: 42, height: 42, borderRadius: 12,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
           {icon}
         </div>
         {trend && (
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-lg ${
-              trend.positive
-                ? 'text-emerald-400 bg-emerald-500/15'
-                : 'text-red-400 bg-red-500/15'
-            }`}
-          >
+          <span style={{
+            fontSize: 12, fontWeight: 600,
+            padding: '4px 10px', borderRadius: 8,
+            color: trend.positive ? '#34d399' : '#f87171',
+            background: trend.positive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+          }}>
             {trend.positive ? '+' : ''}{trend.value}%
           </span>
         )}
       </div>
-      <h3 className="text-2xl font-bold text-white mb-1">{value}</h3>
-      <p className="text-sm text-white/40">{title}</p>
-      {subtitle && <p className="text-xs text-white/25 mt-1">{subtitle}</p>}
+      <h3 style={{ fontSize: 28, fontWeight: 700, color: 'white', marginBottom: 4, letterSpacing: '-0.02em' }}>{value}</h3>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{title}</p>
+      {subtitle && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>{subtitle}</p>}
     </div>
   );
 }

@@ -16,24 +16,24 @@ export default function Dashboard() {
   const aiAccuracy = 91;
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-sm text-white/40 mt-0.5">La Casa del Sabor &middot; Resumen del día</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'white', letterSpacing: '-0.02em' }}>Dashboard</h1>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>La Casa del Sabor &middot; Resumen del día</p>
         </div>
-        <div className="glass px-4 py-2 rounded-xl text-xs text-white/40">
+        <div className="glass" style={{ padding: '8px 16px', borderRadius: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
           {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
         <StatsCard
           title="Total Productos"
           value={totalProducts}
-          icon={<Package className="w-5 h-5 text-purple-400" />}
+          icon={<Package style={{ width: 20, height: 20, color: '#c084fc' }} />}
           trend={{ value: 8, positive: true }}
           glowClass="glow-purple"
         />
@@ -41,14 +41,14 @@ export default function Dashboard() {
           title="Stock Bajo"
           value={lowStockCount}
           subtitle="Requieren atención"
-          icon={<AlertTriangle className="w-5 h-5 text-amber-400" />}
+          icon={<AlertTriangle style={{ width: 20, height: 20, color: '#fbbf24' }} />}
           trend={{ value: 12, positive: false }}
           glowClass="glow-pink"
         />
         <StatsCard
           title="Ventas Hoy"
           value={`$${todaySales}`}
-          icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+          icon={<TrendingUp style={{ width: 20, height: 20, color: '#34d399' }} />}
           trend={{ value: 15, positive: true }}
           glowClass="glow-green"
         />
@@ -56,20 +56,20 @@ export default function Dashboard() {
           title="Precisión IA"
           value={`${aiAccuracy}%`}
           subtitle="Modelo de predicción"
-          icon={<Brain className="w-5 h-5 text-cyan-400" />}
+          icon={<Brain style={{ width: 20, height: 20, color: '#22d3ee' }} />}
           trend={{ value: 3, positive: true }}
           glowClass="glow-cyan"
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16 }}>
         <ConsumptionChart data={weeklyConsumption} />
         <TopProductsChart data={topProducts} />
       </div>
 
       {/* Alerts & Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16 }}>
         <AlertsPanel alerts={aiAlerts} />
         <AIRecommendations predictions={aiPredictions} />
       </div>

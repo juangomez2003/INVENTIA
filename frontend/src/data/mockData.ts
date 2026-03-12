@@ -114,8 +114,8 @@ export function getStockStatus(product: Product): 'critical' | 'low' | 'normal' 
 }
 
 export const stockStatusConfig = {
-  critical: { label: 'Crítico', color: 'text-red-400', bg: 'bg-red-500/20', border: 'border-red-500/30', dot: 'bg-red-500' },
-  low: { label: 'Bajo', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/30', dot: 'bg-amber-500' },
-  normal: { label: 'Normal', color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/30', dot: 'bg-emerald-500' },
-  full: { label: 'Lleno', color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/30', dot: 'bg-cyan-500' },
+  critical: { label: 'Crítico', textColor: '#f87171', bgColor: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.3)', dotColor: '#ef4444' },
+  low: { label: 'Bajo', textColor: '#fbbf24', bgColor: 'rgba(245,158,11,0.2)', borderColor: 'rgba(245,158,11,0.3)', dotColor: '#f59e0b' },
+  normal: { label: 'Normal', textColor: '#34d399', bgColor: 'rgba(16,185,129,0.2)', borderColor: 'rgba(16,185,129,0.3)', dotColor: '#10b981' },
+  full: { label: 'Lleno', textColor: '#22d3ee', bgColor: 'rgba(6,182,212,0.2)', borderColor: 'rgba(6,182,212,0.3)', dotColor: '#06b6d4' },
 };

@@ -7,9 +7,9 @@ interface TopProductsChartProps {
 
 export default function TopProductsChart({ data }: TopProductsChartProps) {
   return (
-    <div className="glass p-5 rounded-2xl">
-      <h3 className="text-base font-semibold text-white mb-4">Top Productos por Ventas</h3>
-      <div className="h-[280px]">
+    <div className="glass" style={{ padding: 24, borderRadius: 16 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'white', marginBottom: 20 }}>Top Productos por Ventas</h3>
+      <div style={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <defs>
@@ -23,12 +23,13 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
             <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} axisLine={false} tickLine={false} />
             <Tooltip
               contentStyle={{
-                background: 'rgba(15, 12, 41, 0.9)',
+                background: 'rgba(15, 12, 41, 0.95)',
                 border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: '12px',
                 backdropFilter: 'blur(20px)',
                 color: '#fff',
                 fontSize: '12px',
+                padding: '10px 14px',
               }}
               formatter={(value, name) => {
                 if (name === 'revenue') return [`$${Number(value).toFixed(2)}`, 'Ingresos'];

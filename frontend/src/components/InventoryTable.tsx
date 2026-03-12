@@ -10,6 +10,20 @@ interface InventoryTableProps {
   onCategoryChange: (cat: string) => void;
 }
 
+const thStyle: React.CSSProperties = {
+  textAlign: 'left', fontSize: 11, fontWeight: 500,
+  color: 'rgba(255,255,255,0.3)', padding: '12px 20px',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '14px 20px',
+};
+
+const barColors: Record<string, string> = {
+  critical: '#ef4444', low: '#f59e0b', normal: '#10b981', full: '#06b6d4',
+};
+
 export default function InventoryTable({ products, searchTerm, onSearchChange, categoryFilter, onCategoryChange }: InventoryTableProps) {
   const categories = ['Todos', ...new Set(products.map(p => p.category))];
 
@@ -20,29 +34,49 @@ export default function InventoryTable({ products, searchTerm, onSearchChange, c
   });
 
   return (
-    <div className="glass rounded-2xl overflow-hidden">
+    <div className="glass" style={{ borderRadius: 16, overflow: 'hidden' }}>
       {/* Filters */}
-      <div className="p-4 border-b border-white/5 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+      <div style={{
+        padding: 16, borderBottom: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
+      }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+          <Search style={{
+            position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+            width: 16, height: 16, color: 'rgba(255,255,255,0.3)',
+          }} />
           <input
             type="text"
             placeholder="Buscar producto..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-purple-500/50 transition-colors"
+            style={{
+              width: '100%',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              padding: '10px 16px 10px 40px',
+              fontSize: 13, color: 'white', outline: 'none',
+              transition: 'border-color 0.2s',
+              boxSizing: 'border-box',
+            }}
+            onFocus={(e) => { e.target.style.borderColor = 'rgba(124,58,237,0.5)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; }}
           />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => onCategoryChange(cat)}
-              className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                categoryFilter === cat
-                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/30'
-                  : 'bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white/60'
-              }`}
+              style={{
+                padding: '8px 14px', borderRadius: 12,
+                fontSize: 12, fontWeight: 500,
+                transition: 'all 0.2s', cursor: 'pointer',
+                background: categoryFilter === cat ? 'rgba(168,85,247,0.25)' : 'rgba(255,255,255,0.05)',
+                color: categoryFilter === cat ? '#c4b5fd' : 'rgba(255,255,255,0.4)',
+                border: categoryFilter === cat ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.05)',
+              }}
             >
               {cat}
             </button>
@@ -51,17 +85,17 @@ export default function InventoryTable({ products, searchTerm, onSearchChange, c
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr className="border-b border-white/5">
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Producto</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Categoría</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Cantidad</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Capacidad</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Estado</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Precio/U</th>
-              <th className="text-left text-xs font-medium text-white/30 px-5 py-3 uppercase tracking-wider">Proveedor</th>
+            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <th style={thStyle}>Producto</th>
+              <th style={thStyle}>Categoría</th>
+              <th style={thStyle}>Cantidad</th>
+              <th style={thStyle}>Capacidad</th>
+              <th style={thStyle}>Estado</th>
+              <th style={thStyle}>Precio/U</th>
+              <th style={thStyle}>Proveedor</th>
             </tr>
           </thead>
           <tbody>
@@ -71,42 +105,50 @@ export default function InventoryTable({ products, searchTerm, onSearchChange, c
               const percentage = Math.round((product.quantity / product.maxCapacity) * 100);
 
               return (
-                <tr key={product.id} className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors">
-                  <td className="px-5 py-3.5">
-                    <span className="text-sm font-medium text-white/90">{product.name}</span>
+                <tr key={product.id} style={{
+                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  transition: 'background 0.2s',
+                }}>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{product.name}</span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-xs text-white/40 bg-white/5 px-2 py-1 rounded-md">{product.category}</span>
+                  <td style={tdStyle}>
+                    <span style={{
+                      fontSize: 11, color: 'rgba(255,255,255,0.4)',
+                      background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 6,
+                    }}>{product.category}</span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-sm text-white/70">{product.quantity} {product.unit}</span>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{product.quantity} {product.unit}</span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${
-                            status === 'critical' ? 'bg-red-500' :
-                            status === 'low' ? 'bg-amber-500' :
-                            status === 'full' ? 'bg-cyan-500' : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${percentage}%` }}
-                        />
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 64, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%', borderRadius: 3,
+                          background: barColors[status],
+                          width: `${percentage}%`,
+                        }} />
                       </div>
-                      <span className="text-[10px] text-white/30">{percentage}%</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{percentage}%</span>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg ${config.bg} ${config.color} border ${config.border}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+                  <td style={tdStyle}>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      fontSize: 11, fontWeight: 500, padding: '4px 10px', borderRadius: 8,
+                      background: config.bgColor, color: config.textColor,
+                      border: `1px solid ${config.borderColor}`,
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: config.dotColor }} />
                       {config.label}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-sm text-white/60">${product.pricePerUnit.toFixed(2)}</span>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>${product.pricePerUnit.toFixed(2)}</span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span className="text-xs text-white/35">{product.supplier}</span>
+                  <td style={tdStyle}>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>{product.supplier}</span>
                   </td>
                 </tr>
               );
@@ -116,7 +158,7 @@ export default function InventoryTable({ products, searchTerm, onSearchChange, c
       </div>
 
       {filtered.length === 0 && (
-        <div className="py-12 text-center text-white/30 text-sm">
+        <div style={{ padding: '48px 0', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
           No se encontraron productos
         </div>
       )}
