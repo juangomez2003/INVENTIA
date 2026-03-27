@@ -3,16 +3,16 @@ import Sidebar from './Sidebar';
 
 export default function Layout() {
   return (
-    <div className="bg-orbs" style={{ minHeight: '100vh', display: 'flex' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-base)' }}>
       <Sidebar />
       <main style={{
         flex: 1,
         minHeight: '100vh',
-        padding: '32px 36px',
+        padding: '36px 40px',
         overflowY: 'auto',
         overflowX: 'hidden',
       }}>
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <Outlet />
         </div>
       </main>

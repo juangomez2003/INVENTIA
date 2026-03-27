@@ -1,33 +1,32 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Package, Brain, Settings, LogOut } from 'lucide-react';
-import Logo from './Logo';
-import ThemeToggle from './ThemeToggle';
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Users, Building2, Package, Puzzle, LogOut } from 'lucide-react'
+import Logo from '../Logo'
+import { useAdminAuth } from '../../context/AdminAuthContext'
+import ThemeToggle from '../ThemeToggle'
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/inventory',  icon: Package,         label: 'Inventario' },
-  { to: '/ai-insights',icon: Brain,           label: 'IA Insights' },
-  { to: '/settings',   icon: Settings,        label: 'Configuración' },
-];
+const NAV_ITEMS = [
+  { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/admin/companies', icon: Building2,        label: 'Empresas' },
+  { to: '/admin/users',     icon: Users,             label: 'Usuarios' },
+  { to: '/admin/products',  icon: Package,           label: 'Productos' },
+  { to: '/admin/modules',   icon: Puzzle,            label: 'Módulos' },
+]
 
-export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+export default function AdminSidebar() {
+  const { adminUser, adminLogout } = useAdminAuth()
+  const navigate = useNavigate()
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = async () => { adminLogout(); navigate('/admin/login') }
 
   return (
     <aside
       className="glass-sidebar"
       style={{
         width: 240,
-        flexShrink: 0,
-        height: '100vh',
-        position: 'sticky',
-        top: 0,
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
+        flexShrink: 0,
       }}
     >
       {/* Logo */}
@@ -45,12 +44,12 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 10px 4px' }}>
-          Menú
+          Panel
         </p>
-        {navItems.map((item) => (
+        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
-            key={item.to}
-            to={item.to}
+            key={to}
+            to={to}
             style={({ isActive }) => ({
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '9px 10px', borderRadius: 10,
@@ -63,44 +62,41 @@ export default function Sidebar() {
           >
             {({ isActive }) => (
               <>
-                <item.icon style={{
-                  width: 17, height: 17, flexShrink: 0,
+                <Icon size={17} style={{
                   color: isActive ? 'var(--nav-active-color)' : 'var(--text-3)',
                   strokeWidth: isActive ? 2.5 : 1.75,
+                  flexShrink: 0,
                 }} />
-                <span>{item.label}</span>
+                <span>{label}</span>
               </>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* User section */}
+      {/* User info */}
       <div style={{ padding: '0 8px 16px', borderTop: '1px solid var(--border-subtle)', paddingTop: 12 }}>
-        {user && (
+        <div style={{ padding: '10px 10px', borderRadius: 10, marginBottom: 4 }}>
           <div style={{
-            padding: '10px 10px',
-            borderRadius: 10,
-            marginBottom: 4,
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'var(--accent-gradient)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 700, color: 'white', marginBottom: 8,
           }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: '50%',
-              background: 'var(--accent-gradient)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 12, fontWeight: 700, color: 'white',
-              marginBottom: 8,
-            }}>
-              {(user.name || 'U').charAt(0).toUpperCase()}
-            </div>
-            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>{user.name}</p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{user.restaurant}</p>
+            {(adminUser?.fullName || adminUser?.email || 'A').charAt(0).toUpperCase()}
           </div>
-        )}
+          <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>
+            {adminUser?.fullName || adminUser?.email}
+          </p>
+          <p style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2, fontWeight: 600 }}>
+            Super Admin
+          </p>
+        </div>
         <button
           onClick={handleLogout}
           style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '9px 10px', borderRadius: 10, width: '100%',
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            padding: '9px 10px', borderRadius: 10,
             fontSize: 14, color: '#ff453a',
             background: 'none', border: 'none',
             cursor: 'pointer', transition: 'background 0.18s',
@@ -108,10 +104,10 @@ export default function Sidebar() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          <LogOut style={{ width: 16, height: 16, flexShrink: 0, strokeWidth: 1.75 }} />
-          <span>Cerrar sesión</span>
+          <LogOut size={16} style={{ strokeWidth: 1.75 }} />
+          Cerrar sesión
         </button>
       </div>
     </aside>
-  );
+  )
 }

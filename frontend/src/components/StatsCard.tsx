@@ -7,42 +7,47 @@ interface StatsCardProps {
   icon: ReactNode;
   trend?: { value: number; positive: boolean };
   glowClass?: string;
+  accentColor?: string;
 }
 
-export default function StatsCard({ title, value, subtitle, icon, trend, glowClass = '' }: StatsCardProps) {
+export default function StatsCard({ title, value, subtitle, icon, trend, accentColor = 'var(--accent)' }: StatsCardProps) {
   return (
     <div
-      className={`glass ${glowClass}`}
-      style={{
-        padding: 20,
-        borderRadius: 16,
-        transition: 'all 0.3s',
-        cursor: 'default',
-      }}
+      className="card card-hover"
+      style={{ padding: '22px 24px', cursor: 'default' }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{
-          width: 42, height: 42, borderRadius: 12,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          width: 44, height: 44, borderRadius: 12,
+          background: `color-mix(in srgb, ${accentColor} 12%, transparent)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
         }}>
           {icon}
         </div>
         {trend && (
-          <span style={{
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 3,
             fontSize: 12, fontWeight: 600,
-            padding: '4px 10px', borderRadius: 8,
-            color: trend.positive ? '#34d399' : '#f87171',
-            background: trend.positive ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+            padding: '4px 10px', borderRadius: 20,
+            color: trend.positive ? '#30d158' : '#ff453a',
+            background: trend.positive ? 'rgba(48,209,88,0.1)' : 'rgba(255,69,58,0.1)',
           }}>
-            {trend.positive ? '+' : ''}{trend.value}%
-          </span>
+            <span>{trend.positive ? '↑' : '↓'}</span>
+            <span>{trend.value}%</span>
+          </div>
         )}
       </div>
-      <h3 style={{ fontSize: 28, fontWeight: 700, color: 'white', marginBottom: 4, letterSpacing: '-0.02em' }}>{value}</h3>
-      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>{title}</p>
-      {subtitle && <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 4 }}>{subtitle}</p>}
+      <p style={{
+        fontSize: 32, fontWeight: 700, color: 'var(--text-1)',
+        letterSpacing: '-0.03em', lineHeight: 1, marginBottom: 6,
+      }}>
+        {value}
+      </p>
+      <p style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 400 }}>{title}</p>
+      {subtitle && (
+        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>
+      )}
     </div>
   );
 }

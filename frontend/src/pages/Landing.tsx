@@ -1,207 +1,422 @@
 import { Link } from 'react-router-dom';
-import {
-  Utensils,
-  Brain,
-  BarChart3,
-  Bell,
-  ShieldCheck,
-  ArrowRight,
-  Package,
-  TrendingUp,
-  Zap,
-  ChevronRight,
-  Star,
-  Check,
-} from 'lucide-react';
-
-const features = [
-  {
-    icon: Brain,
-    title: 'IA Predictiva',
-    description: 'Analiza consumo histórico y predice cuándo se agotará cada producto.',
-    color: 'from-purple-500 to-violet-600',
-  },
-  {
-    icon: BarChart3,
-    title: 'Dashboard en Tiempo Real',
-    description: 'Visualiza ventas, inventario y tendencias con gráficas interactivas.',
-    color: 'from-cyan-500 to-blue-600',
-  },
-  {
-    icon: Bell,
-    title: 'Alertas Automáticas',
-    description: 'Recibe notificaciones cuando un producto está por debajo del mínimo.',
-    color: 'from-amber-500 to-orange-600',
-  },
-  {
-    icon: Package,
-    title: 'Gestión de Inventario',
-    description: 'Control total de productos, categorías, proveedores y almacenamiento.',
-    color: 'from-emerald-500 to-teal-600',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Recomendaciones de Compra',
-    description: 'La IA te dice exactamente qué comprar y cuánto para optimizar costos.',
-    color: 'from-pink-500 to-rose-600',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Reducción de Desperdicio',
-    description: 'Minimiza pérdidas con predicciones basadas en datos reales.',
-    color: 'from-indigo-500 to-blue-600',
-  },
-];
+import { ArrowRight, Bell, BarChart3, Package, Check, Star, Sun, Moon, ChevronRight, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import Logo from '../components/Logo';
+import { useTheme } from '../context/ThemeContext';
 
 const plans = [
   {
-    name: 'Starter',
-    price: '$10',
-    period: '/mes',
-    description: '1 restaurante',
+    name: 'Starter', price: '$10', period: '/mes', description: 'Para empezar sin complicaciones',
     features: ['Dashboard básico', 'Hasta 50 productos', 'Alertas por email', 'Soporte por chat'],
+    highlight: false,
   },
   {
-    name: 'Pro',
-    price: '$29',
-    period: '/mes',
-    description: 'IA + predicción',
-    features: ['Todo en Starter', 'IA predictiva', 'Alertas WhatsApp', 'Reportes avanzados', 'Acceso API'],
+    name: 'Pro', price: '$29', period: '/mes', description: 'El preferido de los restaurantes',
+    features: ['Todo en Starter', 'Predicción de consumo', 'Alertas WhatsApp', 'Reportes avanzados', 'Acceso API'],
     highlight: true,
   },
   {
-    name: 'Enterprise',
-    price: '$79',
-    period: '/mes',
-    description: 'Múltiples sucursales',
-    features: ['Todo en Pro', 'Sucursales ilimitadas', 'API pública', 'Soporte prioritario', 'Integraciones POS'],
+    name: 'Enterprise', price: '$79', period: '/mes', description: 'Para cadenas y múltiples sucursales',
+    features: ['Todo en Pro', 'Sucursales ilimitadas', 'API pública', 'Soporte prioritario 24/7', 'Integraciones POS'],
+    highlight: false,
   },
 ];
 
 export default function Landing() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', width: '100%', overflowX: 'hidden' }}>
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
 
-      {/* ===== NAVBAR ===== */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }} className="glass-sidebar border-b border-white/[0.06]">
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-              <Utensils className="w-4 h-4 text-white" />
-            </div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: 'white', letterSpacing: '-0.02em' }}>RestaurantAI</span>
+  const surface  = isDark ? 'rgba(28,28,30,0.95)' : 'rgba(255,255,255,0.95)';
+  const surface2 = isDark ? '#2c2c2e' : '#f5f5f7';
+  const border   = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      minHeight: '100vh', width: '100%', overflowX: 'hidden',
+      background: 'var(--bg-base)', color: 'var(--text-1)',
+    }}>
+
+      {/* ── NAVBAR ── */}
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        background: isDark ? 'rgba(0,0,0,0.80)' : 'rgba(245,245,247,0.88)',
+        borderBottom: `1px solid ${border}`,
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 28px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Logo size={28} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+            {[['#producto', 'Producto'], ['#precios', 'Precios'], ['#contacto', 'Contacto']].map(([href, label]) => (
+              <a key={href} href={href} style={{ fontSize: 13, color: 'var(--text-3)', textDecoration: 'none', fontWeight: 500, transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
+              >{label}</a>
+            ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }} className="hidden md:flex">
-            <a href="#features" style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Funciones</a>
-            <a href="#how-it-works" style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Cómo funciona</a>
-            <a href="#pricing" style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}>Precios</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={toggleTheme} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'var(--toggle-bg)', border: `1px solid ${border}`,
+              color: 'var(--text-3)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.18s',
+            }}>
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+            <Link to="/login" style={{
+              padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              color: 'white', background: 'var(--accent-gradient)', textDecoration: 'none',
+              transition: 'opacity 0.18s',
+            }}
+              onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.opacity = '0.85')}
+              onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.opacity = '1')}
+            >Acceder</Link>
           </div>
-          <Link
-            to="/login"
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 transition-all shadow-lg shadow-purple-500/20"
-          >
-            Iniciar sesión
-            <ArrowRight className="w-4 h-4 hidden sm:block" />
-          </Link>
         </div>
       </nav>
 
-      {/* ===== HERO ===== */}
-      <section style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '140px 24px 64px', textAlign: 'center', position: 'relative' }}>
-        {/* BG blobs */}
-        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 600, height: 600, background: 'rgba(124,58,237,0.12)', borderRadius: '50%', filter: 'blur(180px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, background: 'rgba(6,182,212,0.1)', borderRadius: '50%', filter: 'blur(150px)', pointerEvents: 'none' }} />
+      {/* ── HERO (split) ── */}
+      <section style={{ width: '100%', maxWidth: 1080, margin: '0 auto', padding: '120px 28px 80px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          {/* Badge */}
-          <div className="glass" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, marginBottom: 32, border: '1px solid rgba(255,255,255,0.1)' }}>
-            <Zap style={{ width: 14, height: 14, color: '#a78bfa' }} />
-            <span style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>Potenciado por Inteligencia Artificial</span>
+          {/* Left — copy */}
+          <div className="animate-fade-up">
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 12px', borderRadius: 20, marginBottom: 28,
+              background: surface2, border: `1px solid ${border}`,
+            }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+              <span style={{ fontSize: 12, color: 'var(--text-2)', fontWeight: 500 }}>Disponible para restaurantes en Colombia</span>
+            </div>
+
+            <h1 style={{
+              fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', fontWeight: 800,
+              color: 'var(--text-1)', lineHeight: 1.1,
+              letterSpacing: '-0.04em', marginBottom: 20,
+            }}>
+              Tu inventario,<br />
+              <span style={{ color: 'var(--accent)' }}>siempre bajo control</span>
+            </h1>
+
+            <p style={{ fontSize: 16, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 36, maxWidth: 440 }}>
+              La plataforma que los restaurantes necesitan para gestionar su stock,
+              evitar faltantes y tomar decisiones basadas en datos reales.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 48 }}>
+              <Link to="/login" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '12px 26px', borderRadius: 11,
+                fontSize: 15, fontWeight: 700, color: 'white',
+                background: 'var(--accent-gradient)', textDecoration: 'none',
+                boxShadow: '0 4px 16px var(--accent-glow)', transition: 'all 0.18s',
+              }}>
+                Comenzar gratis <ArrowRight size={16} />
+              </Link>
+              <a href="#producto" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '12px 22px', borderRadius: 11,
+                fontSize: 15, fontWeight: 500, color: 'var(--text-2)',
+                background: 'var(--surface)', border: `1px solid ${border}`,
+                textDecoration: 'none', transition: 'all 0.18s',
+              }}>
+                Ver el producto <ChevronRight size={15} />
+              </a>
+            </div>
+
+            {/* Mini stats */}
+            <div style={{ display: 'flex', gap: 28, borderTop: `1px solid ${border}`, paddingTop: 24 }}>
+              {[['500+', 'Restaurantes'], ['35%', 'Menos desperdicio'], ['24/7', 'Monitoreo activo']].map(([val, label]) => (
+                <div key={label}>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.03em' }}>{val}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 2 }}>{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <h1 style={{ fontSize: 'clamp(2.2rem, 6vw, 3.5rem)', fontWeight: 800, color: 'white', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 24 }}>
-            Inventario inteligente
-            <br />
-            <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-              para tu restaurante
-            </span>
-          </h1>
+          {/* Right — product mockup */}
+          <div className="animate-fade-up delay-1" style={{ position: 'relative' }}>
+            {/* Floating alert card */}
+            <div style={{
+              position: 'absolute', top: -18, right: -10, zIndex: 2,
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 14, padding: '12px 16px',
+              boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 24px rgba(0,0,0,0.1)',
+              display: 'flex', alignItems: 'center', gap: 10, minWidth: 210,
+            }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,69,58,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <AlertTriangle size={16} style={{ color: '#ff453a' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>Stock crítico</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>Aceite de oliva — 2L restantes</p>
+              </div>
+            </div>
 
-          <p style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.15rem)', color: 'rgba(255,255,255,0.4)', maxWidth: 520, margin: '0 auto 40px', lineHeight: 1.7 }}>
-            Deja que la IA administre tu inventario. Predice consumo, evita faltantes
-            y reduce desperdicio con datos en tiempo real.
-          </p>
+            {/* Main mockup card */}
+            <div style={{
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 18, overflow: 'hidden',
+              boxShadow: isDark ? '0 24px 64px rgba(0,0,0,0.6)' : '0 16px 48px rgba(0,0,0,0.1)',
+            }}>
+              {/* Card header */}
+              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff453a' }} />
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff9f0a' }} />
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#30d158' }} />
+                </div>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace' }}>inventario.inventia.co</span>
+              </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 56 }}>
-            <Link
-              to="/login"
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-xl shadow-purple-500/25"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 16, fontSize: 16, fontWeight: 600, color: 'white', textDecoration: 'none', transition: 'all 0.2s' }}
-            >
-              Comenzar gratis
-              <ArrowRight style={{ width: 20, height: 20 }} />
-            </Link>
-            <a
-              href="#how-it-works"
-              className="glass"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 16, fontSize: 16, fontWeight: 500, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              Ver cómo funciona
-              <ChevronRight style={{ width: 16, height: 16 }} />
-            </a>
+              {/* Stat row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 0, borderBottom: `1px solid ${border}` }}>
+                {[
+                  { label: 'Productos', value: '24', color: '#0a84ff' },
+                  { label: 'Alertas',   value: '3',  color: '#ff453a' },
+                  { label: 'Al día',    value: '87%', color: '#30d158' },
+                ].map((s, i) => (
+                  <div key={s.label} style={{
+                    padding: '16px 18px', textAlign: 'center',
+                    borderRight: i < 2 ? `1px solid ${border}` : 'none',
+                  }}>
+                    <p style={{ fontSize: 22, fontWeight: 800, color: s.color, letterSpacing: '-0.03em' }}>{s.value}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 2, fontWeight: 500 }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Product rows */}
+              {[
+                { name: 'Pollo entero', cat: 'Carnes', qty: 45, max: 80, pct: 56, status: 'ok' },
+                { name: 'Aceite oliva', cat: 'Aceites', qty: 2, max: 20, pct: 10, status: 'critical' },
+                { name: 'Tomates',      cat: 'Verduras', qty: 18, max: 40, pct: 45, status: 'low' },
+                { name: 'Res molida',   cat: 'Carnes', qty: 30, max: 50, pct: 60, status: 'ok' },
+              ].map((p) => {
+                const color = p.status === 'critical' ? '#ff453a' : p.status === 'low' ? '#ff9f0a' : '#30d158'
+                return (
+                  <div key={p.name} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '11px 20px', borderBottom: `1px solid ${border}`,
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{p.name}</p>
+                      <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{p.cat}</p>
+                    </div>
+                    <div style={{ width: 72 }}>
+                      <div style={{ height: 4, borderRadius: 2, background: border, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${p.pct}%`, background: color, borderRadius: 2 }} />
+                      </div>
+                      <p style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2, textAlign: 'right' }}>{p.qty} kg</p>
+                    </div>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                  </div>
+                )
+              })}
+
+              <div style={{ padding: '12px 20px' }}>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center' }}>Actualizado hace 2 minutos</p>
+              </div>
+            </div>
+
+            {/* Floating check badge */}
+            <div style={{
+              position: 'absolute', bottom: -14, left: -10, zIndex: 2,
+              background: surface, border: `1px solid ${border}`,
+              borderRadius: 12, padding: '10px 14px',
+              boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.08)',
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <CheckCircle2 size={16} style={{ color: '#30d158', flexShrink: 0 }} />
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-1)' }}>Pedido sugerido listo</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DIVIDER ── */}
+      <div style={{ width: '100%', maxWidth: 1080, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ height: 1, background: `linear-gradient(to right, transparent, ${border}, transparent)` }} />
+      </div>
+
+      {/* ── PRODUCTO — feature spotlights ── */}
+      <section id="producto" style={{ width: '100%', maxWidth: 1080, margin: '0 auto', padding: '96px 28px', display: 'flex', flexDirection: 'column', gap: 100 }}>
+
+        {/* Spotlight 1 — Inventario */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="animate-fade-up">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(10,132,255,0.1)', marginBottom: 20 }}>
+              <Package size={12} style={{ color: '#0a84ff' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#0a84ff', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Inventario</span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.2 }}>
+              Todo tu stock en un solo lugar
+            </h2>
+            <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.75, marginBottom: 28, maxWidth: 400 }}>
+              Registra productos, categorías y proveedores. Controla cantidades mínimas y
+              recibe el aviso justo antes de que algo falte.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {['Categorías y proveedores por producto', 'Umbrales mínimos personalizables', 'Historial de movimientos de entrada y salida'].map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: 'var(--text-2)' }}>
+                  <Check size={15} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+                  {f}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, maxWidth: 600, margin: '0 auto' }}>
+          {/* Mockup — inventory table */}
+          <div className="animate-fade-up delay-1" style={{
+            background: surface, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden',
+            boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>Inventario</p>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', background: surface2, padding: '3px 10px', borderRadius: 20 }}>24 productos</div>
+            </div>
             {[
-              { value: '500+', label: 'Restaurantes' },
-              { value: '98%', label: 'Precisión IA' },
-              { value: '35%', label: 'Menos desperdicio' },
-              { value: '24/7', label: 'Monitoreo' },
-            ].map((stat) => (
-              <div key={stat.label} className="glass" style={{ padding: 16, borderRadius: 16, textAlign: 'center' }}>
-                <p style={{ fontSize: 'clamp(1.3rem, 3vw, 1.8rem)', fontWeight: 700, color: 'white', marginBottom: 2 }}>{stat.value}</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{stat.label}</p>
+              { name: 'Pollo', cat: 'Carnes', qty: '45 kg', pct: 56, color: '#30d158' },
+              { name: 'Cebolla', cat: 'Verduras', qty: '22 kg', pct: 44, color: '#30d158' },
+              { name: 'Aceite', cat: 'Aceites', qty: '2 L', pct: 10, color: '#ff453a' },
+              { name: 'Queso', cat: 'Lácteos', qty: '8 kg', pct: 32, color: '#ff9f0a' },
+              { name: 'Arroz', cat: 'Granos', qty: '50 kg', pct: 83, color: '#30d158' },
+            ].map(p => (
+              <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 18px', borderBottom: `1px solid ${border}` }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: surface2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Package size={13} style={{ color: 'var(--text-3)' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{p.name}</p>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)' }}>{p.cat}</p>
+                </div>
+                <div style={{ width: 60 }}>
+                  <div style={{ height: 3, borderRadius: 2, background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${p.pct}%`, background: p.color, borderRadius: 2 }} />
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-2)', minWidth: 40, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{p.qty}</p>
               </div>
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ===== DASHBOARD PREVIEW ===== */}
-      <section style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '0 24px 64px' }}>
-        <div className="glass-strong" style={{ borderRadius: 20, padding: 10, boxShadow: '0 25px 50px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ borderRadius: 14, background: 'linear-gradient(135deg, rgba(15,23,42,0.8), rgba(88,28,135,0.3))', padding: 24, minHeight: 280, display: 'flex', flexDirection: 'column' }}>
-            {/* Top bar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(239,68,68,0.6)' }} />
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(245,158,11,0.6)' }} />
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(16,185,129,0.6)' }} />
-              <span style={{ marginLeft: 12, fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>RestaurantAI Dashboard</span>
+        {/* Spotlight 2 — Alertas (reversed) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+
+          {/* Mockup — alerts */}
+          <div className="animate-fade-up" style={{
+            background: surface, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden',
+            boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${border}` }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>Alertas activas</p>
             </div>
-            {/* Mock stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
-              {[
-                { l: 'Productos', v: '16', c: '#a78bfa' },
-                { l: 'Stock Bajo', v: '7', c: '#fbbf24' },
-                { l: 'Ventas Hoy', v: '$237', c: '#34d399' },
-                { l: 'Precisión IA', v: '91%', c: '#22d3ee' },
-              ].map((s) => (
-                <div key={s.l} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 10, border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: s.c }}>{s.v}</p>
-                  <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{s.l}</p>
+            {[
+              { type: 'critical', icon: AlertTriangle, color: '#ff453a', bg: 'rgba(255,69,58,0.1)', title: 'Stock crítico', msg: 'Aceite de oliva — 2 L restantes' },
+              { type: 'warning',  icon: TrendingDown,  color: '#ff9f0a', bg: 'rgba(255,159,10,0.1)', title: 'Stock bajo', msg: 'Queso mozzarella — 8 kg restantes' },
+              { type: 'warning',  icon: TrendingDown,  color: '#ff9f0a', bg: 'rgba(255,159,10,0.1)', title: 'Stock bajo', msg: 'Tomates cherry — 5 kg restantes' },
+              { type: 'info',     icon: Bell,          color: '#0a84ff', bg: 'rgba(10,132,255,0.1)', title: 'Reposición sugerida', msg: 'Crear orden de compra para 3 productos' },
+            ].map((a, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 18px', borderBottom: `1px solid ${border}` }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <a.icon size={15} style={{ color: a.color }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{a.title}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{a.msg}</p>
+                </div>
+              </div>
+            ))}
+            <div style={{ padding: '12px 18px', display: 'flex', justifyContent: 'center' }}>
+              <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>Ver todas las alertas →</span>
+            </div>
+          </div>
+
+          <div className="animate-fade-up delay-1">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(255,159,10,0.1)', marginBottom: 20 }}>
+              <Bell size={12} style={{ color: '#ff9f0a' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#ff9f0a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Alertas</span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.2 }}>
+              Entérate antes de que sea tarde
+            </h2>
+            <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.75, marginBottom: 28, maxWidth: 400 }}>
+              El sistema monitorea tu inventario en tiempo real y te avisa cuando un producto
+              está por debajo del mínimo que tú defines.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {['Notificaciones por email y WhatsApp', 'Niveles mínimos por producto', 'Historial de alertas con timestamps'].map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: 'var(--text-2)' }}>
+                  <Check size={15} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* Spotlight 3 — Reportes */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="animate-fade-up">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(88,86,214,0.1)', marginBottom: 20 }}>
+              <BarChart3 size={12} style={{ color: '#5856d6' }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#5856d6', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Reportes</span>
+            </div>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: 1.2 }}>
+              Datos que te dicen qué comprar
+            </h2>
+            <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.75, marginBottom: 28, maxWidth: 400 }}>
+              Visualiza consumo semanal, identifica los productos más usados y toma
+              decisiones de compra con información real de tu operación.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {['Tendencias de consumo por semana', 'Ranking de productos más usados', 'Exportación de reportes en PDF/Excel'].map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: 'var(--text-2)' }}>
+                  <Check size={15} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Mockup — chart */}
+          <div className="animate-fade-up delay-1" style={{
+            background: surface, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden',
+            boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)',
+            padding: 20,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>Consumo semanal</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Últimas 4 semanas</p>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>+12% vs anterior</div>
+            </div>
+            {/* Bar chart */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 100, marginBottom: 10 }}>
+              {[55, 70, 48, 82, 68, 90, 74].map((h, i) => (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                  <div style={{
+                    width: '100%', height: `${h}%`, borderRadius: '4px 4px 0 0',
+                    background: i === 5
+                      ? 'var(--accent-gradient)'
+                      : isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+                  }} />
                 </div>
               ))}
             </div>
-            {/* Mock chart */}
-            <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '32px 24px 12px' }}>
-              {[40, 55, 45, 70, 85, 65, 75].map((h, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div
-                    className="bg-gradient-to-t from-purple-600/80 to-cyan-500/60"
-                    style={{ width: 28, borderRadius: '6px 6px 0 0', height: `${h * 1.5}px` }}
-                  />
-                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)' }}>{['L', 'M', 'X', 'J', 'V', 'S', 'D'][i]}</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['L','M','X','J','V','S','D'].map(d => (
+                <div key={d} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: 'var(--text-3)' }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${border}`, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[['Más usado', 'Pollo — 90 kg'], ['Menos usado', 'Camarones — 12 kg']].map(([label, val]) => (
+                <div key={label} style={{ background: surface2, borderRadius: 10, padding: '10px 12px' }}>
+                  <p style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3 }}>{label}</p>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>{val}</p>
                 </div>
               ))}
             </div>
@@ -209,135 +424,100 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
-      <section id="features" style={{ width: '100%', maxWidth: 900, margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: '#a78bfa', marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Funcionalidades</p>
-        <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 700, color: 'white', marginBottom: 12 }}>Todo lo que necesitas</h2>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', maxWidth: 480, margin: '0 auto 48px' }}>
-          Herramientas inteligentes diseñadas para que tu restaurante nunca se quede sin ingredientes.
-        </p>
+      {/* ── DIVIDER ── */}
+      <div style={{ width: '100%', maxWidth: 1080, margin: '0 auto', padding: '0 28px' }}>
+        <div style={{ height: 1, background: `linear-gradient(to right, transparent, ${border}, transparent)` }} />
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
-          {features.map((feature) => (
-            <div key={feature.title} className="glass hover:bg-white/[0.08] transition-all duration-300 group" style={{ padding: 24, borderRadius: 16, textAlign: 'center' }}>
-              <div className={`bg-gradient-to-br ${feature.color} group-hover:scale-110 transition-transform`} style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <feature.icon style={{ width: 22, height: 22, color: 'white' }} />
-              </div>
-              <h3 style={{ fontSize: 16, fontWeight: 600, color: 'white', marginBottom: 8 }}>{feature.title}</h3>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── PRICING ── */}
+      <section id="precios" style={{ width: '100%', maxWidth: 940, margin: '0 auto', padding: '96px 28px', textAlign: 'center' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Precios</p>
+        <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 800, color: 'var(--text-1)', marginBottom: 12, letterSpacing: '-0.03em' }}>
+          Sin sorpresas. Sin contratos.
+        </h2>
+        <p style={{ fontSize: 15, color: 'var(--text-2)', marginBottom: 52 }}>Empieza gratis. Escala cuando lo necesites.</p>
 
-      {/* ===== HOW IT WORKS ===== */}
-      <section id="how-it-works" style={{ width: '100%', maxWidth: 700, margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: '#22d3ee', marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cómo funciona</p>
-        <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 700, color: 'white', marginBottom: 48 }}>Simple y poderoso</h2>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[
-            { step: '01', title: 'Registra tu inventario', desc: 'Agrega los productos de tu restaurante con cantidades, proveedores y umbrales mínimos.' },
-            { step: '02', title: 'La IA analiza tus datos', desc: 'Nuestros agentes de IA estudian patrones de consumo, ventas y tendencias semanales.' },
-            { step: '03', title: 'Recibe predicciones', desc: 'Obtén alertas antes de que un producto se agote y recomendaciones exactas de compra.' },
-            { step: '04', title: 'Optimiza tu negocio', desc: 'Reduce desperdicio, ahorra dinero y nunca pierdas una venta por falta de ingredientes.' },
-          ].map((item) => (
-            <div key={item.step} className="glass hover:bg-white/[0.08] transition-all group" style={{ padding: 24, borderRadius: 16, display: 'flex', alignItems: 'center', gap: 20, textAlign: 'left' }}>
-              <div className="group-hover:border-purple-500/30 transition-colors" style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.2))', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span className="bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent" style={{ fontSize: 20, fontWeight: 700 }}>{item.step}</span>
-              </div>
-              <div>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'white', marginBottom: 4 }}>{item.title}</h3>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>{item.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ===== PRICING ===== */}
-      <section id="pricing" style={{ width: '100%', maxWidth: 900, margin: '0 auto', padding: '64px 24px', textAlign: 'center' }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: '#f472b6', marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Precios</p>
-        <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 700, color: 'white', marginBottom: 12 }}>El plan ideal para ti</h2>
-        <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 48 }}>Sin compromisos. Cancela cuando quieras.</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 14 }}>
           {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={plan.highlight ? 'glass-strong ring-1 ring-purple-500/20' : 'glass'}
-              style={{ borderRadius: 16, padding: 24, textAlign: 'center', transition: 'transform 0.3s', ...(plan.highlight ? { borderColor: 'rgba(124,58,237,0.3)', boxShadow: '0 20px 40px rgba(124,58,237,0.1)' } : {}) }}
-            >
+            <div key={plan.name} className="card" style={{
+              borderRadius: 18, padding: '28px 24px', textAlign: 'left',
+              ...(plan.highlight ? {
+                border: '1.5px solid var(--border-focus)',
+                boxShadow: `var(--card-shadow), 0 0 0 1px var(--border-focus)`,
+              } : {}),
+            }}>
               {plan.highlight && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 12, padding: '4px 12px', borderRadius: 9999, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.2)' }}>
-                  <Star style={{ width: 12, height: 12, color: '#a78bfa', fill: '#a78bfa' }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#a78bfa' }}>MÁS POPULAR</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 14, padding: '4px 12px', borderRadius: 20, background: 'var(--nav-active-bg)' }}>
+                  <Star style={{ width: 10, height: 10, color: 'var(--accent)', fill: 'var(--accent)' }} />
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.06em' }}>MÁS POPULAR</span>
                 </div>
               )}
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: 'white' }}>{plan.name}</h3>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginBottom: 16 }}>{plan.description}</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4, marginBottom: 24 }}>
-                <span style={{ fontSize: 36, fontWeight: 800, color: 'white' }}>{plan.price}</span>
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }}>{plan.period}</span>
+              <h3 style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.02em', marginBottom: 4 }}>{plan.name}</h3>
+              <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 20 }}>{plan.description}</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
+                <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.04em' }}>{plan.price}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-3)' }}>{plan.period}</span>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 auto 24px', maxWidth: 200, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'rgba(255,255,255,0.5)', textAlign: 'left' }}>
-                    <Check style={{ width: 14, height: 14, color: '#a78bfa', flexShrink: 0 }} />
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {plan.features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text-2)' }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--nav-active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Check style={{ width: 9, height: 9, color: 'var(--accent)', strokeWidth: 3 }} />
+                    </div>
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link
-                to="/login"
-                className={plan.highlight ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/20' : ''}
-                style={{ display: 'block', textAlign: 'center', padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 600, color: plan.highlight ? 'white' : 'rgba(255,255,255,0.7)', textDecoration: 'none', transition: 'all 0.2s', ...(plan.highlight ? {} : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }) }}
-              >
-                Comenzar
-              </Link>
+              <Link to="/login" style={{
+                display: 'block', textAlign: 'center', padding: '12px 0', borderRadius: 11,
+                fontSize: 14, fontWeight: 700, textDecoration: 'none', transition: 'all 0.18s',
+                ...(plan.highlight
+                  ? { background: 'var(--accent-gradient)', color: 'white', boxShadow: '0 4px 12px var(--accent-glow)' }
+                  : { background: surface2, color: 'var(--text-1)', border: `1px solid ${border}` }
+                ),
+              }}>Empezar</Link>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ===== CTA ===== */}
-      <section style={{ width: '100%', maxWidth: 700, margin: '0 auto', padding: '64px 24px' }}>
-        <div className="glass-strong" style={{ borderRadius: 20, padding: 48, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, width: 256, height: 256, background: 'rgba(124,58,237,0.1)', borderRadius: '50%', filter: 'blur(100px)' }} />
-          <div style={{ position: 'absolute', bottom: 0, left: 0, width: 192, height: 192, background: 'rgba(6,182,212,0.1)', borderRadius: '50%', filter: 'blur(80px)' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.2rem)', fontWeight: 700, color: 'white', marginBottom: 16 }}>
-              Empieza hoy mismo
-            </h2>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.4)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-              Únete a cientos de restaurantes que ya optimizan su inventario con inteligencia artificial.
-            </p>
-            <Link
-              to="/login"
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-xl shadow-purple-500/25"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 16, fontSize: 16, fontWeight: 600, color: 'white', textDecoration: 'none' }}
-            >
-              Crear cuenta gratis
-              <ArrowRight style={{ width: 20, height: 20 }} />
-            </Link>
-          </div>
-        </div>
+      {/* ── CTA ── */}
+      <section id="contacto" style={{ width: '100%', maxWidth: 620, margin: '0 auto', padding: '40px 28px 100px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800, color: 'var(--text-1)', letterSpacing: '-0.04em', marginBottom: 16, lineHeight: 1.1 }}>
+          ¿Listo para tener<br />control total?
+        </h2>
+        <p style={{ fontSize: 15, color: 'var(--text-2)', lineHeight: 1.7, marginBottom: 36, maxWidth: 380, margin: '0 auto 36px' }}>
+          Más de 500 restaurantes en Colombia ya gestionan su inventario con Inventia.
+          Empieza hoy, sin tarjeta de crédito.
+        </p>
+        <Link to="/login" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '14px 36px', borderRadius: 12,
+          fontSize: 16, fontWeight: 700, color: 'white',
+          background: 'var(--accent-gradient)', textDecoration: 'none',
+          boxShadow: '0 6px 24px var(--accent-glow)', transition: 'all 0.18s',
+        }}>
+          Crear cuenta gratis <ArrowRight size={17} />
+        </Link>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 16 }}>Sin tarjeta · Cancela cuando quieras</p>
       </section>
 
-      {/* ===== FOOTER ===== */}
-      <footer style={{ width: '100%', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '32px 24px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="bg-gradient-to-br from-purple-500 to-cyan-500" style={{ width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Utensils style={{ width: 14, height: 14, color: 'white' }} />
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.6)' }}>RestaurantAI</span>
+      {/* ── FOOTER ── */}
+      <footer style={{ width: '100%', borderTop: `1px solid ${border}`, padding: '28px 28px' }}>
+        <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <Logo size={22} />
+          <div style={{ display: 'flex', gap: 24 }}>
+            {[['#producto', 'Producto'], ['#precios', 'Precios'], ['#contacto', 'Contacto']].map(([href, label]) => (
+              <a key={href} href={href} style={{ fontSize: 12, color: 'var(--text-3)', textDecoration: 'none', transition: 'color 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-2)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
+              >{label}</a>
+            ))}
           </div>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
-            &copy; 2026 RestaurantAI. Todos los derechos reservados.
-          </p>
+          <p style={{ fontSize: 12, color: 'var(--text-3)' }}>© 2026 INVENTIA. Todos los derechos reservados.</p>
         </div>
       </footer>
+
     </div>
   );
 }

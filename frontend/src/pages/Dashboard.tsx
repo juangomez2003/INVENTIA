@@ -15,61 +15,89 @@ export default function Dashboard() {
   const todaySales = 237;
   const aiAccuracy = 91;
 
+  const today = new Date().toLocaleDateString('es-MX', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const todayFormatted = today.charAt(0).toUpperCase() + today.slice(1);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div
+        className="animate-fade-up"
+        style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}
+      >
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'white', letterSpacing: '-0.02em' }}>Dashboard</h1>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>La Casa del Sabor &middot; Resumen del día</p>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 500, marginBottom: 4, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Panel de control
+          </p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-1)', letterSpacing: '-0.03em' }}>
+            Dashboard
+          </h1>
         </div>
-        <div className="glass" style={{ padding: '8px 16px', borderRadius: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-          {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <div style={{
+          fontSize: 13, color: 'var(--text-3)',
+          background: 'var(--surface)',
+          padding: '8px 14px', borderRadius: 10,
+          boxShadow: 'var(--card-shadow)',
+          fontWeight: 400,
+        }}>
+          {todayFormatted}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+      <div
+        className="animate-fade-up delay-1"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}
+      >
         <StatsCard
           title="Total Productos"
           value={totalProducts}
-          icon={<Package style={{ width: 20, height: 20, color: '#c084fc' }} />}
+          icon={<Package style={{ width: 20, height: 20, color: '#007aff' }} />}
           trend={{ value: 8, positive: true }}
-          glowClass="glow-purple"
+          accentColor="#007aff"
         />
         <StatsCard
           title="Stock Bajo"
           value={lowStockCount}
           subtitle="Requieren atención"
-          icon={<AlertTriangle style={{ width: 20, height: 20, color: '#fbbf24' }} />}
+          icon={<AlertTriangle style={{ width: 20, height: 20, color: '#ff453a' }} />}
           trend={{ value: 12, positive: false }}
-          glowClass="glow-pink"
+          accentColor="#ff453a"
         />
         <StatsCard
           title="Ventas Hoy"
           value={`$${todaySales}`}
-          icon={<TrendingUp style={{ width: 20, height: 20, color: '#34d399' }} />}
+          icon={<TrendingUp style={{ width: 20, height: 20, color: '#30d158' }} />}
           trend={{ value: 15, positive: true }}
-          glowClass="glow-green"
+          accentColor="#30d158"
         />
         <StatsCard
           title="Precisión IA"
           value={`${aiAccuracy}%`}
           subtitle="Modelo de predicción"
-          icon={<Brain style={{ width: 20, height: 20, color: '#22d3ee' }} />}
+          icon={<Brain style={{ width: 20, height: 20, color: '#5856d6' }} />}
           trend={{ value: 3, positive: true }}
-          glowClass="glow-cyan"
+          accentColor="#5856d6"
         />
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16 }}>
+      <div
+        className="animate-fade-up delay-2"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 14 }}
+      >
         <ConsumptionChart data={weeklyConsumption} />
         <TopProductsChart data={topProducts} />
       </div>
 
       {/* Alerts & Recommendations */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16 }}>
+      <div
+        className="animate-fade-up delay-3"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 14 }}
+      >
         <AlertsPanel alerts={aiAlerts} />
         <AIRecommendations predictions={aiPredictions} />
       </div>

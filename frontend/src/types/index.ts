@@ -71,3 +71,66 @@ export interface RestaurantSettings {
   notifyEmail: boolean;
   autoRestock: boolean;
 }
+
+// ─── Admin Panel Types ────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string
+  email: string
+  fullName: string | null
+  role: 'super_admin'
+}
+
+export interface Company {
+  id: string
+  firebaseUid: string | null
+  name: string
+  ownerEmail: string
+  ownerName: string | null
+  plan: 'free' | 'pro' | 'enterprise'
+  status: 'active' | 'suspended' | 'deleted'
+  userCount?: number
+  productCount?: number
+  createdAt: string
+}
+
+export interface PlatformUser {
+  id: string
+  firebaseUid: string
+  companyId: string | null
+  companyName?: string
+  email: string
+  displayName: string | null
+  role: string
+  status: 'active' | 'suspended'
+  lastLogin: string | null
+  createdAt: string
+}
+
+export interface CompanyModule {
+  moduleKey: string
+  displayName: string
+  description: string
+  icon: string
+  enabled: boolean
+  updatedAt?: string
+}
+
+export interface PlatformMetrics {
+  totalCompanies: number
+  totalUsers: number
+  activeCompanies: number
+  suspendedCompanies: number
+  newCompanies7d: number
+  newUsers7d: number
+  totalProducts: number
+  criticalProducts: number
+  topPlans: Array<{ plan: string; count: number }>
+}
+
+export interface MetricsHistory {
+  date: string
+  totalCompanies: number
+  totalUsers: number
+  activeCompanies: number
+}
