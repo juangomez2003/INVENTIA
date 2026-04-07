@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     supabase_service_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
     supabase_jwt_secret: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
+    stripe_secret_key: str = os.getenv("STRIPE_SECRET_KEY", "")
+    stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
     app_env: str = os.getenv("APP_ENV", "development")
     cors_origins: str = os.getenv("CORS_ORIGINS", "http://localhost:5173")
     secret_key: str = os.getenv("SECRET_KEY", "dev-secret-key")

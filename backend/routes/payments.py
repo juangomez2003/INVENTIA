@@ -3,6 +3,8 @@ from pydantic import BaseModel, EmailStr
 import logging
 import os
 
+from config import settings
+
 router = APIRouter(prefix="/payments", tags=["payments"])
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class CreateIntentRequest(BaseModel):
 
 def get_stripe():
     """Devuelve el módulo stripe configurado o None si no está disponible."""
-    secret_key = os.getenv("STRIPE_SECRET_KEY", "")
+    secret_key = settings.stripe_secret_key
     if not secret_key:
         return None
     try:
