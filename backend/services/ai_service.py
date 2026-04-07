@@ -1,4 +1,17 @@
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    import math
+    class np:  # type: ignore
+        @staticmethod
+        def mean(lst): return sum(lst) / len(lst) if lst else 0.0
+        @staticmethod
+        def std(lst):
+            if not lst: return 0.0
+            m = sum(lst) / len(lst)
+            return math.sqrt(sum((x - m) ** 2 for x in lst) / len(lst))
+        @staticmethod
+        def clip(val, lo, hi): return max(lo, min(hi, val))
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import logging
