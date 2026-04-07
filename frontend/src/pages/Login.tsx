@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Eye, EyeOff, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Sun, Moon, ChevronLeft, LayoutDashboard, Brain, Bell } from 'lucide-react';
 import Logo from '../components/Logo';
 
 const inputStyle: React.CSSProperties = {
@@ -78,6 +78,22 @@ export default function Login() {
         minWidth: 0,
       }}>
         <div style={{ width: '100%', maxWidth: 400 }}>
+
+          {/* Back to landing */}
+          <Link
+            to="/landing"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 13, color: 'var(--text-2)', textDecoration: 'none',
+              marginBottom: 28,
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}
+          >
+            <ChevronLeft size={15} />
+            Volver al inicio
+          </Link>
 
           {/* Logo */}
           <div style={{ marginBottom: 40 }}>
@@ -273,9 +289,9 @@ export default function Login() {
 
           {/* Feature pills */}
           {[
-            { icon: '📊', text: 'Dashboard en tiempo real' },
-            { icon: '🤖', text: 'Predicciones con IA' },
-            { icon: '🔔', text: 'Alertas automáticas' },
+            { icon: <LayoutDashboard size={15} />, text: 'Dashboard en tiempo real' },
+            { icon: <Brain size={15} />, text: 'Predicciones con IA' },
+            { icon: <Bell size={15} />, text: 'Alertas automáticas' },
           ].map(({ icon, text }) => (
             <div
               key={text}
@@ -288,7 +304,7 @@ export default function Login() {
                 width: '100%', maxWidth: 260,
               }}
             >
-              <span style={{ fontSize: 16 }}>{icon}</span>
+              <span style={{ opacity: 0.75, display: 'flex' }}>{icon}</span>
               <span>{text}</span>
             </div>
           ))}
