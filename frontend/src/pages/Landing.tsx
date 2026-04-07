@@ -5,17 +5,29 @@ import { useTheme } from '../context/ThemeContext';
 
 const plans = [
   {
-    name: 'Starter', price: '$10', period: '/mes', description: 'Para empezar sin complicaciones',
+    name: 'Starter',
+    planKey: 'starter',
+    price: '$49.900',
+    period: '/mes',
+    description: 'Para empezar sin complicaciones',
     features: ['Dashboard básico', 'Hasta 50 productos', 'Alertas por email', 'Soporte por chat'],
     highlight: false,
   },
   {
-    name: 'Pro', price: '$29', period: '/mes', description: 'El preferido de los restaurantes',
+    name: 'Pro',
+    planKey: 'pro',
+    price: '$99.900',
+    period: '/mes',
+    description: 'El preferido de los restaurantes',
     features: ['Todo en Starter', 'Predicción de consumo', 'Alertas WhatsApp', 'Reportes avanzados', 'Acceso API'],
     highlight: true,
   },
   {
-    name: 'Enterprise', price: '$79', period: '/mes', description: 'Para cadenas y múltiples sucursales',
+    name: 'Enterprise',
+    planKey: 'enterprise',
+    price: '$249.900',
+    period: '/mes',
+    description: 'Para cadenas y múltiples sucursales',
     features: ['Todo en Pro', 'Sucursales ilimitadas', 'API pública', 'Soporte prioritario 24/7', 'Integraciones POS'],
     highlight: false,
   },
@@ -468,7 +480,7 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <Link to="/login" style={{
+              <Link to={`/checkout?plan=${plan.planKey}`} style={{
                 display: 'block', textAlign: 'center', padding: '12px 0', borderRadius: 11,
                 fontSize: 14, fontWeight: 700, textDecoration: 'none', transition: 'all 0.18s',
                 ...(plan.highlight

@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 import AdminLayout from './components/admin/AdminLayout'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Checkout from './pages/Checkout'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import AIInsights from './pages/AIInsights'
@@ -39,6 +40,7 @@ function AppRoutes() {
         {/* Public routes */}
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/checkout" element={<Checkout />} />
 
         {/* Admin routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

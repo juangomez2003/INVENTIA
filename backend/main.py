@@ -8,6 +8,7 @@ from config import settings
 from firebase_service import init_firebase
 from routes import auth, inventory, ai, settings as settings_router
 from routes.admin import router as admin_router
+from routes.payments import router as payments_router
 
 # Configure logging
 logging.basicConfig(
@@ -55,6 +56,7 @@ app.include_router(inventory.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(settings_router.router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(payments_router, prefix="/api/v1")
 
 
 @app.get("/")
