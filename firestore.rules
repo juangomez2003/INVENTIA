@@ -2,21 +2,153 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Restaurante: solo el dueño (uid == restaurantId) puede leer/escribir
+    // ─────────────────────────────────────────────────────────
+    // FUNCIONES AUXILIARES
+    // ─────────────────────────────────────────────────────────
+
+    // Verifica que el usuario autenticado es el dueño del restaurante
+    function isOwner(restaurantId) {
+      return request.auth != null && request.auth.uid == restaurantId;
+    }
+
+    // Verifica que el documento entrante tiene todos los campos requeridos
+    function hasProductFields() {
+      return request.resource.data.keys().hasAll([
+        'name', 'category', 'quantity', 'unit',
+        'min_threshold', 'max_capacity', 'price_per_unit',
+        'supplier', 'last_updated', 'restaurant_id'
+      ]);
+    }
+
+    function hasMovementFields() {
+      return request.resource.data.keys().hasAll([
+        'product_id', 'movement_type', 'quantity',
+        'timestamp', 'restaurant_id', 'user_id'
+      ]);
+    }
+
+    // Valida que movement_type sea uno de los valores permitidos
+    function isValidMovementType() {
+      return request.resource.data.movement_type in ['entrada', 'salida', 'ajuste'];
+    }
+
+    // Valida que quantity sea positiva
+    function isPositiveQty() {
+      return request.resource.data.quantity > 0;
+    }
+
+    // Valida que la categoria del producto sea válida
+    function isValidCategory() {
+      return request.resource.data.category in [
+        'Carnes', 'Verduras', 'Lacteos', 'Aceites',
+        'Granos', 'Bebidas', 'Condimentos', 'Frutas',
+        'Mariscos', 'Panaderia', 'Limpieza', 'Otros'
+      ];
+    }
+
+    // Valida que la unidad sea válida
+    function isValidUnit() {
+      return request.resource.data.unit in [
+        'kg', 'g', 'L', 'ml', 'unidad', 'caja', 'paquete', 'docena', 'lb'
+      ];
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // COLECCION: restaurants
+    // Cada documento = un restaurante, ID = UID de Firebase Auth
+    // ─────────────────────────────────────────────────────────
     match /restaurants/{restaurantId} {
-      allow read, write: if request.auth != null && request.auth.uid == restaurantId;
 
-      // Productos
+      // Solo el dueño puede leer su propio restaurante
+      allow read: if isOwner(restaurantId);
+
+      // Crear: solo el dueño y con campos mínimos obligatorios
+      allow create: if isOwner(restaurantId)
+                    && request.resource.data.keys().hasAll([
+                         'name', 'owner_uid', 'owner_email',
+                         'created_at', 'settings'
+                       ]);
+
+      // Actualizar: solo el dueño, no puede cambiar owner_uid ni created_at
+      allow update: if isOwner(restaurantId)
+                    && !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['owner_uid', 'created_at']);
+
+      // Eliminar: solo el dueño
+      allow delete: if isOwner(restaurantId);
+
+      // ───────────────────────────────────────────────────────
+      // SUBCOLECCION: products
+      // ───────────────────────────────────────────────────────
       match /products/{productId} {
-        allow read, write: if request.auth != null && request.auth.uid == restaurantId;
+
+        // Leer: solo el dueño del restaurante
+        allow read: if isOwner(restaurantId);
+
+        // Crear: validar campos obligatorios, categoría, unidad y cantidad
+        allow create: if isOwner(restaurantId)
+                      && hasProductFields()
+                      && isValidCategory()
+                      && isValidUnit()
+                      && request.resource.data.quantity >= 0
+                      && request.resource.data.min_threshold >= 0
+                      && request.resource.data.max_capacity > 0
+                      && request.resource.data.price_per_unit >= 0
+                      // restaurant_id debe coincidir con el restaurante padre
+                      && request.resource.data.restaurant_id == restaurantId;
+
+        // Actualizar: validar campos, no cambiar restaurant_id
+        allow update: if isOwner(restaurantId)
+                      && isValidCategory()
+                      && isValidUnit()
+                      && request.resource.data.quantity >= 0
+                      && !request.resource.data.diff(resource.data)
+                          .affectedKeys().hasAny(['restaurant_id']);
+
+        // Eliminar: solo el dueño
+        allow delete: if isOwner(restaurantId);
       }
 
-      // Movimientos de stock
+      // ───────────────────────────────────────────────────────
+      // SUBCOLECCION: movements
+      // INMUTABLE: solo create y read, nunca update/delete
+      // ───────────────────────────────────────────────────────
       match /movements/{movementId} {
-        allow read:   if request.auth != null && request.auth.uid == restaurantId;
-        allow create: if request.auth != null && request.auth.uid == restaurantId;
-        // Movimientos son inmutables (no update/delete)
+
+        // Leer: solo el dueño
+        allow read: if isOwner(restaurantId);
+
+        // Crear: validar todos los campos, tipo y cantidad positiva
+        allow create: if isOwner(restaurantId)
+                      && hasMovementFields()
+                      && isValidMovementType()
+                      && isPositiveQty()
+                      && request.resource.data.restaurant_id == restaurantId
+                      && request.resource.data.user_id == request.auth.uid;
+
+        // UPDATE y DELETE: NUNCA PERMITIDOS (movimientos son inmutables)
+        allow update: if false;
+        allow delete: if false;
       }
+
+      // ───────────────────────────────────────────────────────
+      // SUBCOLECCION: alerts (futuro)
+      // Alertas de stock bajo generadas por el sistema
+      // ───────────────────────────────────────────────────────
+      match /alerts/{alertId} {
+        allow read:   if isOwner(restaurantId);
+        allow create: if isOwner(restaurantId);
+        allow update: if isOwner(restaurantId)
+                      && request.resource.data.keys().hasAll(['resolved', 'resolved_at']);
+        allow delete: if false;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // BLOQUEAR TODO LO DEMAS por defecto
+    // ─────────────────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

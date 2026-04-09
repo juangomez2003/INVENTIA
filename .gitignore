@@ -25,3 +25,4 @@ env/
 
 # OS
 Thumbs.db
+.vercel

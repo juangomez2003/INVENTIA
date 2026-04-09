@@ -84,7 +84,7 @@ function StaffSection({ plan }: { plan: string }) {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { if (isPaid) reload() else setLoading(false) }, [isPaid])
+  useEffect(() => { if (isPaid) { reload() } else { setLoading(false) } }, [isPaid])
 
   async function handleGenerate() {
     setGenerating(true)
