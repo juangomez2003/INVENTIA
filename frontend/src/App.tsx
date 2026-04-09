@@ -19,6 +19,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import AdminCompanies from './pages/admin/AdminCompanies'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminModules from './pages/admin/AdminModules'
+import AdminAnalytics from './pages/admin/AdminAnalytics'
 
 function AppRoutes() {
   const { loading } = useAuth()
@@ -56,6 +57,7 @@ function AppRoutes() {
           <Route path="/admin/companies" element={<AdminCompanies />} />
           <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/modules" element={<AdminModules />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
 

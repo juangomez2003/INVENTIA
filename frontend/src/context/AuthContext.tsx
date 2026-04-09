@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User } from '../types';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -22,70 +23,58 @@ const DEMO_USER: User = {
   restaurant: 'La Casa del Sabor',
 };
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
+async function fetchUserInfo(token: string): Promise<User | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) return await res.json();
+  } catch { /* ignore */ }
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    const initAuth = async () => {
-      try {
-        const { auth, isConfigured } = await import('../lib/firebase');
-
-        if (isConfigured && auth) {
-          const { onAuthStateChanged } = await import('firebase/auth');
-          unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-              // Try to get full user info from backend
-              try {
-                const token = await firebaseUser.getIdToken();
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-                const res = await fetch(`${apiUrl}/auth/me`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                if (res.ok) {
-                  const userData = await res.json();
-                  setUser(userData);
-                } else {
-                  setUser({
-                    id: firebaseUser.uid,
-                    name: firebaseUser.displayName || firebaseUser.email || 'Usuario',
-                    email: firebaseUser.email || '',
-                    role: 'Admin',
-                    restaurant: 'Mi Restaurante',
-                  });
-                }
-              } catch {
-                setUser({
-                  id: firebaseUser.uid,
-                  name: firebaseUser.displayName || firebaseUser.email || 'Usuario',
-                  email: firebaseUser.email || '',
-                  role: 'Admin',
-                  restaurant: 'Mi Restaurante',
-                });
-              }
-            } else {
-              setUser(null);
-            }
-            setLoading(false);
-          });
-          return;
-        }
-      } catch {
-        // Firebase not available, fall through to demo mode
-      }
-
-      // Demo mode - restore session from localStorage
+    if (!isSupabaseConfigured || !supabase) {
+      // Demo mode — restore session from localStorage
       const saved = localStorage.getItem('inventia_user');
       if (saved) {
         try { setUser(JSON.parse(saved)); } catch { /* ignore */ }
       }
       setLoading(false);
-    };
+      return;
+    }
 
-    initAuth();
-    return () => { unsubscribe?.(); };
+    // Supabase auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          const token = session.access_token;
+          const info = await fetchUserInfo(token);
+          if (info) {
+            setUser(info);
+          } else {
+            setUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.full_name || session.user.email || 'Usuario',
+              email: session.user.email || '',
+              role: 'Admin',
+              restaurant: session.user.user_metadata?.restaurant_name || 'Mi Restaurante',
+            });
+          }
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -96,41 +85,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    // Firebase Auth login
+    if (!isSupabaseConfigured || !supabase) return false;
+
     try {
-      const { auth, isConfigured } = await import('../lib/firebase');
-      if (!isConfigured || !auth) return false;
-
-      const { signInWithEmailAndPassword } = await import('firebase/auth');
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const token = await result.user.getIdToken();
-
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
-        const res = await fetch(`${apiUrl}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const userData = await res.json();
-          setUser(userData);
-        } else {
-          setUser({
-            id: result.user.uid,
-            name: result.user.displayName || result.user.email || 'Usuario',
-            email: result.user.email || '',
-            role: 'Admin',
-            restaurant: 'Mi Restaurante',
-          });
-        }
-      } catch {
-        setUser({
-          id: result.user.uid,
-          name: result.user.displayName || result.user.email || 'Usuario',
-          email: result.user.email || '',
-          role: 'Admin',
-          restaurant: 'Mi Restaurante',
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.session) {
+        console.error('Login error:', error?.message);
+        return false;
       }
+      // onAuthStateChange will handle setUser
       return true;
     } catch (err) {
       console.error('Login error:', err);
@@ -139,13 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      const { auth, isConfigured } = await import('../lib/firebase');
-      if (isConfigured && auth) {
-        const { signOut } = await import('firebase/auth');
-        await signOut(auth);
-      }
-    } catch { /* ignore */ }
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
     setUser(null);
     localStorage.removeItem('inventia_user');
   };

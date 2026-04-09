@@ -1,15 +1,16 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Building2, Package, Puzzle, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, Building2, Store, Puzzle, LogOut, BarChart2 } from 'lucide-react'
 import Logo from '../Logo'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import ThemeToggle from '../ThemeToggle'
 
 const NAV_ITEMS = [
-  { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/companies', icon: Building2,        label: 'Empresas' },
-  { to: '/admin/users',     icon: Users,             label: 'Usuarios' },
-  { to: '/admin/products',  icon: Package,           label: 'Productos' },
-  { to: '/admin/modules',   icon: Puzzle,            label: 'Módulos' },
+  { to: '/admin/dashboard',  icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/admin/products',   icon: Store,            label: 'Restaurantes' },
+  { to: '/admin/users',      icon: Users,            label: 'Usuarios' },
+  { to: '/admin/analytics',  icon: BarChart2,        label: 'Análisis' },
+  { to: '/admin/modules',    icon: Puzzle,           label: 'Módulos' },
+  { to: '/admin/companies',  icon: Building2,        label: 'Empresas' },
 ]
 
 export default function AdminSidebar() {

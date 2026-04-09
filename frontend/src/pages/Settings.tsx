@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Settings as SettingsIcon, Store, Bell, Shield, Save, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, Store, Bell, Shield, Save, Check, Loader } from 'lucide-react';
 import { defaultSettings } from '../data/mockData';
+import { api } from '../services/api';
 import type { RestaurantSettings } from '../types';
 
 const inputStyle: React.CSSProperties = {
@@ -59,12 +60,53 @@ function SectionHeader({ icon, label, color = 'var(--accent)' }: { icon: React.R
 
 export default function Settings() {
   const [settings, setSettings] = useState<RestaurantSettings>(defaultSettings);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved]   = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    api.get<any>('/settings/').then(data => {
+      setSettings({
+        name:          data.name          ?? defaultSettings.name,
+        address:       data.address       ?? defaultSettings.address,
+        phone:         data.phone         ?? defaultSettings.phone,
+        email:         data.email         ?? defaultSettings.email,
+        alertThreshold: data.alert_threshold ?? defaultSettings.alertThreshold,
+        notifyWhatsApp: data.notify_whatsapp ?? defaultSettings.notifyWhatsApp,
+        notifyEmail:    data.notify_email   ?? defaultSettings.notifyEmail,
+        autoRestock:    data.auto_restock   ?? defaultSettings.autoRestock,
+      });
+    }).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put('/settings/', {
+        name:             settings.name,
+        address:          settings.address,
+        phone:            settings.phone,
+        email:            settings.email,
+        alert_threshold:  settings.alertThreshold,
+        notify_whatsapp:  settings.notifyWhatsApp,
+        notify_email:     settings.notifyEmail,
+        auto_restock:     settings.autoRestock,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error('Error saving settings:', e);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 10, color: 'var(--text-3)', fontSize: 14 }}>
+      <Loader style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} />
+      Cargando configuración...
+    </div>
+  );
 
   const focusInput = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.style.borderColor = 'var(--border-focus)';
@@ -204,18 +246,22 @@ export default function Settings() {
       <div className="animate-fade-up delay-4">
         <button
           onClick={handleSave}
+          disabled={saving}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '13px 24px', borderRadius: 10,
             fontSize: 14, fontWeight: 600, color: 'white',
             background: saved ? '#30d158' : 'var(--accent-gradient)',
-            border: 'none', cursor: 'pointer',
+            border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+            opacity: saving ? 0.7 : 1,
             boxShadow: `0 4px 14px ${saved ? 'rgba(48,209,88,0.35)' : 'var(--accent-glow)'}`,
             transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             fontFamily: 'inherit',
           }}
         >
-          {saved ? (
+          {saving ? (
+            <><Loader style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> Guardando...</>
+          ) : saved ? (
             <><Check style={{ width: 16, height: 16 }} /> Cambios guardados</>
           ) : (
             <><Save style={{ width: 16, height: 16 }} /> Guardar cambios</>

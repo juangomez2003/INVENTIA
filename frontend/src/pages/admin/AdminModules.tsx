@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Puzzle, Package, Brain, Bell, MessageCircle, FileText, Users, Plug, Building2 } from 'lucide-react'
+import { Puzzle, Package, Brain, Bell, MessageCircle, FileText, Users, Plug, Store } from 'lucide-react'
 import { adminService } from '../../services/adminService'
-import type { CompanyModule, Company } from '../../types'
+import type { CompanyModule } from '../../types'
+
+type Restaurant = { id: string; name: string }
 
 const ICON_MAP: Record<string, React.ElementType> = {
   package: Package,
@@ -22,21 +24,21 @@ const inputStyle: React.CSSProperties = {
 }
 
 export default function AdminModules() {
-  const [modules, setModules] = useState<CompanyModule[]>([])
-  const [companies, setCompanies] = useState<Company[]>([])
+  const [modules, setModules]           = useState<CompanyModule[]>([])
+  const [restaurants, setRestaurants]   = useState<Restaurant[]>([])
   const [selectedCompany, setSelectedCompany] = useState<string>('global')
-  const [loading, setLoading] = useState(true)
-  const [toggling, setToggling] = useState<string | null>(null)
+  const [loading, setLoading]           = useState(true)
+  const [toggling, setToggling]         = useState<string | null>(null)
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [mods, comps] = await Promise.all([
+      const [mods, rests] = await Promise.all([
         adminService.getModules(selectedCompany === 'global' ? undefined : selectedCompany),
-        adminService.getCompanies({ limit: 100 }),
+        adminService.getRestaurants(),
       ])
       setModules(mods)
-      setCompanies(comps.items)
+      setRestaurants(rests as Restaurant[])
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -80,15 +82,15 @@ export default function AdminModules() {
       {/* Company selector */}
       <div className="animate-fade-up delay-1" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Building2 style={{ width: 16, height: 16, color: 'var(--text-3)', strokeWidth: 1.75, flexShrink: 0 }} />
+          <Store style={{ width: 16, height: 16, color: 'var(--text-3)', strokeWidth: 1.75, flexShrink: 0 }} />
           <select
             value={selectedCompany}
             onChange={e => setSelectedCompany(e.target.value)}
             onFocus={focusInput} onBlur={blurInput}
-            style={{ ...inputStyle, minWidth: 220 }}
+            style={{ ...inputStyle, minWidth: 240 }}
           >
             <option value="global">Vista global (todos los módulos)</option>
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
         {selectedCompany === 'global' && (

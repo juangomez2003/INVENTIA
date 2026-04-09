@@ -38,6 +38,32 @@ class UserUpdate(BaseModel):
 class ModuleToggle(BaseModel):
     enabled: bool
 
+class RestaurantUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    alert_threshold: Optional[int] = None
+    notify_email: Optional[bool] = None
+    notify_whatsapp: Optional[bool] = None
+    auto_restock: Optional[bool] = None
+
+class AdminProductCreate(BaseModel):
+    name: str
+    category: str
+    quantity: float
+    unit: str
+    min_threshold: float
+    max_capacity: float
+
+class AdminProductUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    min_threshold: Optional[float] = None
+    max_capacity: Optional[float] = None
+
 
 # ─── Demo data ────────────────────────────────────────────────────────────────
 
@@ -78,52 +104,40 @@ def _demo_modules():
 async def get_metrics_overview(admin=Depends(verify_admin_token)):
     sb = get_supabase()
     if sb is None:
-        companies = _demo_companies()
-        users = _demo_users()
-        now = datetime.now()
         return {
-            "total_companies": len(companies),
-            "total_users": len(users),
-            "active_companies": len([c for c in companies if c["status"] == "active"]),
-            "suspended_companies": len([c for c in companies if c["status"] == "suspended"]),
-            "new_companies_7d": 2,
-            "new_users_7d": 3,
-            "total_products": 100,
-            "critical_products": 8,
-            "top_plans": [
-                {"plan": "free", "count": 2},
-                {"plan": "pro", "count": 1},
-                {"plan": "enterprise", "count": 1},
-            ],
+            "total_restaurants": 1, "total_products": 16,
+            "critical_products": 2, "low_products": 3,
+            "total_movements": 160, "movements_7d": 24, "new_restaurants_7d": 0,
         }
     try:
-        companies_res = sb.table("companies").select("id, status, created_at").execute()
-        companies = companies_res.data or []
-        users_res = sb.table("platform_users").select("id, created_at").execute()
-        users = users_res.data or []
         now = datetime.now()
         seven_days_ago = (now - timedelta(days=7)).isoformat()
 
-        new_companies = [c for c in companies if c.get("created_at", "") > seven_days_ago]
-        new_users = [u for u in users if u.get("created_at", "") > seven_days_ago]
+        rest_res  = sb.table("restaurants").select("id, created_at").execute()
+        restaurants = rest_res.data or []
+        new_rests = [r for r in restaurants if (r.get("created_at") or "") >= seven_days_ago]
 
-        plans_res = sb.table("companies").select("plan").execute()
-        plan_counts: dict = {}
-        for c in (plans_res.data or []):
-            p = c.get("plan", "free")
-            plan_counts[p] = plan_counts.get(p, 0) + 1
-        top_plans = [{"plan": k, "count": v} for k, v in plan_counts.items()]
+        prod_res  = sb.table("products").select("id, quantity, min_threshold, max_capacity").execute()
+        products  = prod_res.data or []
+        critical  = sum(1 for p in products if (p.get("quantity") or 0) <= (p.get("min_threshold") or 0))
+        low       = sum(
+            1 for p in products
+            if (p.get("quantity") or 0) > (p.get("min_threshold") or 0)
+            and ((p.get("quantity") or 0) / ((p.get("max_capacity") or 1) or 1) * 100) <= 30
+        )
+
+        mov_res   = sb.table("movements").select("id, created_at").execute()
+        movements = mov_res.data or []
+        mov_7d    = [m for m in movements if (m.get("created_at") or "") >= seven_days_ago]
 
         return {
-            "total_companies": len(companies),
-            "total_users": len(users),
-            "active_companies": len([c for c in companies if c.get("status") == "active"]),
-            "suspended_companies": len([c for c in companies if c.get("status") == "suspended"]),
-            "new_companies_7d": len(new_companies),
-            "new_users_7d": len(new_users),
-            "total_products": 0,
-            "critical_products": 0,
-            "top_plans": top_plans,
+            "total_restaurants":   len(restaurants),
+            "total_products":      len(products),
+            "critical_products":   critical,
+            "low_products":        low,
+            "total_movements":     len(movements),
+            "movements_7d":        len(mov_7d),
+            "new_restaurants_7d":  len(new_rests),
         }
     except Exception as e:
         logger.error(f"Error fetching metrics: {e}")
@@ -132,20 +146,112 @@ async def get_metrics_overview(admin=Depends(verify_admin_token)):
 
 @router.get("/metrics/history")
 async def get_metrics_history(days: int = Query(30, ge=7, le=90), admin=Depends(verify_admin_token)):
-    # Return simulated history data
-    now = datetime.now()
-    history = []
-    total_c, total_u = 4, 5
-    for i in range(days, -1, -1):
-        d = now - timedelta(days=i)
-        # Simulate growth
-        history.append({
-            "date": d.strftime("%Y-%m-%d"),
-            "total_companies": max(1, total_c - i // 5),
-            "total_users": max(1, total_u - i // 4),
-            "active_companies": max(1, total_c - i // 5 - (1 if i > 10 else 0)),
-        })
-    return history
+    sb = get_supabase()
+    since = (datetime.now() - timedelta(days=days)).isoformat()
+    if sb is None:
+        now = datetime.now()
+        return [{"date": (now - timedelta(days=i)).strftime("%Y-%m-%d"), "movements": i % 8 + 1} for i in range(days, -1, -7)]
+    try:
+        mov_res = sb.table("movements").select("created_at").gte("created_at", since).execute()
+        daily: dict = {}
+        for m in (mov_res.data or []):
+            day = (m.get("created_at") or "")[:10]
+            if day:
+                daily[day] = daily.get(day, 0) + 1
+        return [{"date": k, "movements": v} for k, v in sorted(daily.items())]
+    except Exception as e:
+        logger.error(f"Error fetching history: {e}")
+        return []
+
+
+@router.get("/analytics")
+async def get_analytics(admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    thirty_ago = (datetime.now() - timedelta(days=30)).isoformat()
+
+    if sb is None:
+        return {
+            "products_by_status": [
+                {"status": "critical", "label": "Crítico", "count": 2, "color": "#ff453a"},
+                {"status": "low",      "label": "Bajo",    "count": 3, "color": "#ff9f0a"},
+                {"status": "normal",   "label": "Normal",  "count": 11, "color": "#30d158"},
+            ],
+            "movements_by_type": [
+                {"type": "entrada", "label": "Entrada", "total": 320},
+                {"type": "salida",  "label": "Salida",  "total": 480},
+                {"type": "ajuste",  "label": "Ajuste",  "total": 60},
+                {"type": "merma",   "label": "Merma",   "total": 20},
+            ],
+            "daily_movements": [],
+            "per_restaurant": [{"restaurant_name": "La Casa del Sabor", "products": 16, "critical": 2}],
+        }
+
+    try:
+        prod_res = sb.table("products").select("quantity, min_threshold, max_capacity, restaurant_id").execute()
+        products = prod_res.data or []
+
+        critical = sum(1 for p in products if (p.get("quantity") or 0) <= (p.get("min_threshold") or 0))
+        low = sum(
+            1 for p in products
+            if (p.get("quantity") or 0) > (p.get("min_threshold") or 0)
+            and ((p.get("quantity") or 0) / ((p.get("max_capacity") or 1) or 1) * 100) <= 30
+        )
+        normal = len(products) - critical - low
+
+        mov_res = sb.table("movements").select("movement_type, quantity, created_at, restaurant_id").gte("created_at", thirty_ago).execute()
+        movements = mov_res.data or []
+
+        by_type: dict = {}
+        for m in movements:
+            t = m.get("movement_type", "otro")
+            by_type[t] = by_type.get(t, 0) + (m.get("quantity") or 0)
+
+        daily: dict = {}
+        for m in movements:
+            day = (m.get("created_at") or "")[:10]
+            if day:
+                daily[day] = daily.get(day, 0) + 1
+
+        # Per-restaurant product stats
+        rest_prod: dict = {}
+        for p in products:
+            rid = p.get("restaurant_id", "")
+            if rid not in rest_prod:
+                rest_prod[rid] = {"products": 0, "critical": 0}
+            rest_prod[rid]["products"] += 1
+            if (p.get("quantity") or 0) <= (p.get("min_threshold") or 0):
+                rest_prod[rid]["critical"] += 1
+
+        rest_res = sb.table("restaurants").select("id, name").execute()
+        rest_names = {r["id"]: r["name"] for r in (rest_res.data or [])}
+
+        TYPE_LABELS = {"entrada": "Entrada", "salida": "Salida", "ajuste": "Ajuste", "merma": "Merma"}
+        TYPE_COLORS = {"entrada": "#30d158", "salida": "#ff453a", "ajuste": "#ff9f0a", "merma": "#636366"}
+
+        return {
+            "products_by_status": [
+                {"status": "critical", "label": "Crítico", "count": critical, "color": "#ff453a"},
+                {"status": "low",      "label": "Bajo",    "count": low,      "color": "#ff9f0a"},
+                {"status": "normal",   "label": "Normal",  "count": normal,   "color": "#30d158"},
+            ],
+            "movements_by_type": [
+                {"type": k, "label": TYPE_LABELS.get(k, k), "total": v, "color": TYPE_COLORS.get(k, "#5856d6")}
+                for k, v in by_type.items()
+            ],
+            "daily_movements": [{"date": k, "count": v} for k, v in sorted(daily.items())],
+            "per_restaurant": [
+                {
+                    "restaurant_id": rid,
+                    "restaurant_name": rest_names.get(rid, rid[:8]),
+                    "products": s["products"],
+                    "critical": s["critical"],
+                }
+                for rid, s in rest_prod.items()
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error fetching analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ─── COMPANIES ───────────────────────────────────────────────────────────────
@@ -257,36 +363,48 @@ async def delete_company(company_id: str, admin=Depends(verify_admin_token)):
 @router.get("/users")
 async def list_users(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-    company_id: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200),
     search: Optional[str] = None,
     admin=Depends(verify_admin_token),
 ):
     sb = get_supabase()
     if sb is None:
         users = _demo_users()
-        if company_id:
-            users = [u for u in users if u["company_id"] == company_id]
         if search:
-            search_lower = search.lower()
-            users = [u for u in users if search_lower in (u.get("display_name") or "").lower() or search_lower in u["email"].lower()]
+            sl = search.lower()
+            users = [u for u in users if sl in (u.get("display_name") or "").lower() or sl in u["email"].lower()]
         offset = (page - 1) * limit
         return {"items": users[offset:offset+limit], "total": len(users), "page": page, "limit": limit}
 
     try:
-        query = sb.table("platform_users").select("*, companies(name)")
-        if company_id:
-            query = query.eq("company_id", company_id)
-        if search:
-            query = query.ilike("email", f"%{search}%")
-        query = query.range((page - 1) * limit, page * limit - 1)
-        result = query.execute()
-        count_res = sb.table("platform_users").select("id", count="exact").execute()
-        items = []
-        for u in (result.data or []):
-            u["company_name"] = (u.get("companies") or {}).get("name")
-            items.append(u)
-        return {"items": items, "total": count_res.count or 0, "page": page, "limit": limit}
+        # Lista usuarios desde Supabase Auth (admin API)
+        response = sb.auth.admin.list_users()
+        all_users = response if isinstance(response, list) else getattr(response, "users", []) or []
+
+        result = []
+        for u in all_users:
+            email        = getattr(u, "email", "") or ""
+            meta         = getattr(u, "user_metadata", {}) or {}
+            app_meta     = getattr(u, "app_metadata", {}) or {}
+            display_name = meta.get("full_name") or meta.get("name") or ""
+            role         = meta.get("role") or app_meta.get("role") or "usuario"
+            banned       = getattr(u, "banned_until", None)
+            if search:
+                sl = search.lower()
+                if sl not in email.lower() and sl not in display_name.lower():
+                    continue
+            result.append({
+                "id":           str(getattr(u, "id", "")),
+                "email":        email,
+                "display_name": display_name,
+                "role":         role,
+                "status":       "suspended" if banned else "active",
+                "last_login":   str(getattr(u, "last_sign_in_at", "") or ""),
+                "created_at":   str(getattr(u, "created_at", "") or ""),
+            })
+
+        offset = (page - 1) * limit
+        return {"items": result[offset:offset+limit], "total": len(result), "page": page, "limit": limit}
     except Exception as e:
         logger.error(f"Error listing users: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -380,6 +498,148 @@ async def list_all_products(
         }
     except Exception as e:
         logger.error(f"Error fetching admin products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── RESTAURANTS (per-tenant view) ───────────────────────────────────────────
+
+@router.get("/restaurants")
+async def list_restaurants(admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    if sb is None:
+        now = datetime.now().isoformat()
+        return [
+            {"id": "r1", "name": "La Casa del Sabor", "owner_id": "u1", "email": "chef@lacasadelsabor.com",
+             "phone": "+57 300 000 0000", "address": "Calle Principal 123",
+             "alert_threshold": 20, "notify_email": True, "notify_whatsapp": False,
+             "auto_restock": False, "product_count": 16, "created_at": now},
+        ]
+    try:
+        result = sb.table("restaurants").select("*").order("created_at", desc=True).execute()
+        restaurants = result.data or []
+        for r in restaurants:
+            try:
+                count_res = sb.table("products").select("id", count="exact").eq("restaurant_id", r["id"]).execute()
+                r["product_count"] = count_res.count or 0
+            except Exception:
+                r["product_count"] = 0
+        return restaurants
+    except Exception as e:
+        logger.error(f"Error listing restaurants: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/restaurants/{restaurant_id}/products")
+async def get_restaurant_products(restaurant_id: str, admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    if sb is None:
+        return {"items": [], "total": 0}
+    try:
+        result = sb.table("products").select("*").eq("restaurant_id", restaurant_id).order("name").execute()
+        products = result.data or []
+        for p in products:
+            qty = p.get("quantity", 0)
+            min_t = p.get("min_threshold", 0)
+            max_c = p.get("max_capacity", 1)
+            pct = qty / max_c * 100 if max_c > 0 else 100
+            p["status"] = "critical" if qty <= min_t else ("low" if pct <= 30 else "normal")
+        return {"items": products, "total": len(products)}
+    except Exception as e:
+        logger.error(f"Error fetching restaurant products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/restaurants/{restaurant_id}")
+async def admin_update_restaurant(restaurant_id: str, data: RestaurantUpdate, admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    update["updated_at"] = datetime.now().isoformat()
+    if sb is None:
+        return {"id": restaurant_id, **update}
+    try:
+        result = sb.table("restaurants").update(update).eq("id", restaurant_id).execute()
+        return result.data[0] if result.data else {}
+    except Exception as e:
+        logger.error(f"Error updating restaurant: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/restaurants/{restaurant_id}/products", status_code=201)
+async def admin_create_product(restaurant_id: str, data: AdminProductCreate, admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    payload = {**data.model_dump(), "restaurant_id": restaurant_id, "created_at": datetime.now().isoformat()}
+    if sb is None:
+        return {"id": f"demo-{datetime.now().timestamp()}", **payload}
+    try:
+        result = sb.table("products").insert(payload).execute()
+        return result.data[0] if result.data else {}
+    except Exception as e:
+        logger.error(f"Error creating product: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/restaurants/{restaurant_id}/products/{product_id}")
+async def admin_update_product(restaurant_id: str, product_id: str, data: AdminProductUpdate, admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    update = {k: v for k, v in data.model_dump().items() if v is not None}
+    update["updated_at"] = datetime.now().isoformat()
+    if sb is None:
+        return {"id": product_id, **update}
+    try:
+        result = sb.table("products").update(update).eq("id", product_id).eq("restaurant_id", restaurant_id).execute()
+        return result.data[0] if result.data else {}
+    except Exception as e:
+        logger.error(f"Error updating product: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/restaurants/{restaurant_id}/products/{product_id}")
+async def admin_delete_product(restaurant_id: str, product_id: str, admin=Depends(verify_admin_token)):
+    sb = get_supabase()
+    if sb is None:
+        return {"message": "Producto eliminado (demo)"}
+    try:
+        sb.table("movements").delete().eq("product_id", product_id).execute()
+        sb.table("products").delete().eq("id", product_id).eq("restaurant_id", restaurant_id).execute()
+        return {"message": "Producto eliminado"}
+    except Exception as e:
+        logger.error(f"Error deleting product: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/restaurants/{restaurant_id}/movements")
+async def get_restaurant_movements(
+    restaurant_id: str,
+    limit: int = Query(100, ge=1, le=500),
+    admin=Depends(verify_admin_token),
+):
+    sb = get_supabase()
+    if sb is None:
+        return {"items": [], "total": 0}
+    try:
+        result = (
+            sb.table("movements")
+            .select("id, product_id, product_name, movement_type, quantity, unit, notes, created_at")
+            .eq("restaurant_id", restaurant_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        movements = []
+        for m in (result.data or []):
+            movements.append({
+                "id":           m.get("id"),
+                "product_id":   m.get("product_id"),
+                "product_name": m.get("product_name", "—"),
+                "product_unit": m.get("unit", ""),
+                "type":         m.get("movement_type"),
+                "quantity":     m.get("quantity"),
+                "notes":        m.get("notes"),
+                "created_at":   m.get("created_at"),
+            })
+        return {"items": movements, "total": len(movements)}
+    except Exception as e:
+        logger.error(f"Error fetching restaurant movements: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

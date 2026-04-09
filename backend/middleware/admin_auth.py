@@ -1,46 +1,44 @@
 from fastapi import Header, HTTPException
 from typing import Optional
-from jose import jwt, JWTError
-from config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 DEMO_ADMIN_TOKEN = "demo-admin-token-inventia-2024"
 
+
 async def verify_admin_token(authorization: Optional[str] = Header(None)) -> dict:
     """
-    Verify Supabase JWT and ensure the user has super_admin role.
-    Accepts a demo token when Supabase is not configured.
+    Verifica el JWT de Supabase y confirma rol super_admin en user_metadata o app_metadata.
     """
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token de administrador requerido")
 
     token = authorization.split(" ")[1]
 
-    # Demo mode: accept hardcoded token
+    # Token demo (cuando Supabase no está configurado)
     if token == DEMO_ADMIN_TOKEN:
         return {
             "sub": "demo-admin-id",
             "email": "admin@inventia.com",
-            "app_metadata": {"role": "super_admin"},
+            "user_metadata": {"role": "super_admin"},
+            "app_metadata":  {"role": "super_admin"},
             "demo": True,
         }
 
-    if not settings.supabase_jwt_secret:
-        raise HTTPException(status_code=503, detail="Supabase no configurado. Use el token demo.")
-
+    # Verificar con Supabase Auth (auth.get_user valida firma y expiración)
     try:
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
-        )
-        role = payload.get("app_metadata", {}).get("role", "")
-        if role != "super_admin":
-            raise HTTPException(status_code=403, detail="Acceso denegado: se requiere rol super_admin")
-        return payload
-    except JWTError as e:
-        logger.error(f"JWT verification failed: {e}")
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+        from supabase_service import verify_supabase_token
+        payload = verify_supabase_token(token)
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+    # Comprobar rol super_admin en cualquiera de los dos metadatos
+    user_meta = payload.get("user_metadata") or {}
+    app_meta  = payload.get("app_metadata")  or {}
+    role = user_meta.get("role") or app_meta.get("role") or ""
+
+    if role != "super_admin":
+        raise HTTPException(status_code=403, detail="Acceso denegado: se requiere rol super_admin")
+
+    return payload

@@ -2,9 +2,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    const { auth } = await import('../lib/firebase')
-    if (auth && auth.currentUser) {
-      return await auth.currentUser.getIdToken()
+    const { supabase, isSupabaseConfigured } = await import('../lib/supabase')
+    if (isSupabaseConfigured && supabase) {
+      const { data } = await supabase.auth.getSession()
+      return data.session?.access_token ?? null
     }
   } catch {}
   return null

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useAdminAuth } from '../context/AdminAuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Eye, EyeOff, ArrowRight, Sun, Moon, ChevronLeft, LayoutDashboard, Brain, Bell } from 'lucide-react';
 import Logo from '../components/Logo';
@@ -27,8 +26,7 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [remember, setRemember] = useState(false);
-  const { login }      = useAuth();
-  const { adminLogin } = useAdminAuth();
+  const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -37,9 +35,6 @@ export default function Login() {
     setError('');
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
-
-    const adminOk = await adminLogin(email, password);
-    if (adminOk) { navigate('/admin/dashboard'); setLoading(false); return; }
 
     const success = await login(email, password);
     if (success) {

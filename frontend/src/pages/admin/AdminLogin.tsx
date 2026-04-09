@@ -145,16 +145,16 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          {/* Demo hint */}
+          {/* Hint */}
           <div style={{
             marginTop: 20, padding: '12px 14px', borderRadius: 10,
             background: 'var(--demo-bg)', border: '1px solid var(--demo-border)',
           }}>
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Credenciales demo
+              Acceso super admin
             </p>
             <p style={{ fontSize: 12, color: 'var(--demo-label)', fontFamily: 'ui-monospace, monospace', lineHeight: 1.8 }}>
-              admin@inventia.com<br />admin123
+              superadmin@inventia.com<br />SuperAdmin2024!
             </p>
           </div>
         </div>

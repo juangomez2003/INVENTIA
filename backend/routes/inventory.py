@@ -1,50 +1,56 @@
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, HTTPException, Header
 from typing import Optional, List
 from datetime import datetime
 import logging
 
-from models import Product, ProductCreate, ProductUpdate, StockMovement
-from firebase_service import get_db, get_auth
+from models import ProductCreate, ProductUpdate, StockMovement
+from supabase_service import get_supabase, verify_supabase_token
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 logger = logging.getLogger(__name__)
 
 
-async def get_current_user(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token requerido")
-    token = authorization.split(" ")[1]
-    try:
-        auth = get_auth()
-        decoded = auth.verify_id_token(token)
-        return decoded
-    except Exception as e:
-        logger.error(f"Token verification failed: {e}")
-        raise HTTPException(status_code=401, detail="Token inválido")
+def _extract_token(authorization: Optional[str]) -> Optional[str]:
+    if authorization and authorization.startswith("Bearer "):
+        return authorization.split(" ")[1]
+    return None
 
 
-def get_restaurant_id(user: dict) -> str:
-    return user.get("restaurant_id") or user.get("uid", "demo")
+def _get_restaurant_id(token: str, sb) -> str:
+    """Obtiene el restaurant_id del usuario autenticado."""
+    payload = verify_supabase_token(token)
+    user_id = payload["sub"]
+
+    result = sb.table("restaurants")\
+        .select("id")\
+        .eq("owner_id", user_id)\
+        .single()\
+        .execute()
+
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+    return result.data["id"]
 
 
 @router.get("/products", response_model=List[dict])
 async def get_products(authorization: Optional[str] = Header(None)):
-    db = get_db()
-    if db is None:
-        # Demo mode - return mock products
-        return get_demo_products()
+    sb = get_supabase()
+    if not sb:
+        return _demo_products()
+
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
 
     try:
-        user = await get_current_user(authorization)
-        restaurant_id = get_restaurant_id(user)
-        products_ref = db.collection("restaurants").document(restaurant_id).collection("products")
-        docs = products_ref.stream()
-        products = []
-        for doc in docs:
-            data = doc.to_dict()
-            data["id"] = doc.id
-            products.append(data)
-        return products
+        restaurant_id = _get_restaurant_id(token, sb)
+        result = sb.table("products")\
+            .select("*")\
+            .eq("restaurant_id", restaurant_id)\
+            .eq("active", True)\
+            .order("name")\
+            .execute()
+        return result.data or []
     except HTTPException:
         raise
     except Exception as e:
@@ -54,22 +60,23 @@ async def get_products(authorization: Optional[str] = Header(None)):
 
 @router.post("/products", response_model=dict, status_code=201)
 async def create_product(product: ProductCreate, authorization: Optional[str] = Header(None)):
-    db = get_db()
-    if db is None:
+    sb = get_supabase()
+    if not sb:
         return {"id": "demo-new", **product.model_dump(), "last_updated": datetime.now().isoformat()}
 
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+
     try:
-        user = await get_current_user(authorization)
-        restaurant_id = get_restaurant_id(user)
-        products_ref = db.collection("restaurants").document(restaurant_id).collection("products")
-
-        data = product.model_dump()
-        data["last_updated"] = datetime.now().isoformat()
-        data["restaurant_id"] = restaurant_id
-
-        doc_ref = products_ref.add(data)
-        data["id"] = doc_ref[1].id
-        return data
+        restaurant_id = _get_restaurant_id(token, sb)
+        data = {
+            **product.model_dump(),
+            "restaurant_id": restaurant_id,
+            "last_updated": datetime.now().isoformat(),
+        }
+        result = sb.table("products").insert(data).execute()
+        return result.data[0]
     except HTTPException:
         raise
     except Exception as e:
@@ -78,24 +85,33 @@ async def create_product(product: ProductCreate, authorization: Optional[str] = 
 
 
 @router.put("/products/{product_id}", response_model=dict)
-async def update_product(product_id: str, product: ProductUpdate, authorization: Optional[str] = Header(None)):
-    db = get_db()
-    if db is None:
-        return {"id": product_id, **product.model_dump(exclude_none=True), "last_updated": datetime.now().isoformat()}
+async def update_product(
+    product_id: str,
+    product: ProductUpdate,
+    authorization: Optional[str] = Header(None),
+):
+    sb = get_supabase()
+    if not sb:
+        return {"id": product_id, **product.model_dump(exclude_none=True)}
+
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
 
     try:
-        user = await get_current_user(authorization)
-        restaurant_id = get_restaurant_id(user)
-        doc_ref = db.collection("restaurants").document(restaurant_id).collection("products").document(product_id)
-
+        restaurant_id = _get_restaurant_id(token, sb)
         update_data = {k: v for k, v in product.model_dump().items() if v is not None}
         update_data["last_updated"] = datetime.now().isoformat()
 
-        doc_ref.update(update_data)
-        doc = doc_ref.get()
-        data = doc.to_dict()
-        data["id"] = doc.id
-        return data
+        result = sb.table("products")\
+            .update(update_data)\
+            .eq("id", product_id)\
+            .eq("restaurant_id", restaurant_id)\
+            .execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        return result.data[0]
     except HTTPException:
         raise
     except Exception as e:
@@ -105,15 +121,22 @@ async def update_product(product_id: str, product: ProductUpdate, authorization:
 
 @router.delete("/products/{product_id}")
 async def delete_product(product_id: str, authorization: Optional[str] = Header(None)):
-    db = get_db()
-    if db is None:
+    sb = get_supabase()
+    if not sb:
         return {"message": "Producto eliminado (demo mode)"}
 
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+
     try:
-        user = await get_current_user(authorization)
-        restaurant_id = get_restaurant_id(user)
-        doc_ref = db.collection("restaurants").document(restaurant_id).collection("products").document(product_id)
-        doc_ref.delete()
+        restaurant_id = _get_restaurant_id(token, sb)
+        # Soft delete: marcar como inactivo en vez de eliminar
+        sb.table("products")\
+            .update({"active": False, "last_updated": datetime.now().isoformat()})\
+            .eq("id", product_id)\
+            .eq("restaurant_id", restaurant_id)\
+            .execute()
         return {"message": "Producto eliminado exitosamente"}
     except HTTPException:
         raise
@@ -124,36 +147,47 @@ async def delete_product(product_id: str, authorization: Optional[str] = Header(
 
 @router.post("/movements")
 async def record_movement(movement: StockMovement, authorization: Optional[str] = Header(None)):
-    db = get_db()
-    if db is None:
+    """
+    Registra un movimiento de stock.
+    El trigger apply_stock_movement actualiza la quantity del producto automáticamente.
+    """
+    sb = get_supabase()
+    if not sb:
         return {"message": "Movimiento registrado (demo mode)", "id": "demo-movement"}
 
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+
     try:
-        user = await get_current_user(authorization)
-        restaurant_id = get_restaurant_id(user)
+        payload = verify_supabase_token(token)
+        user_id = payload["sub"]
+        restaurant_id = _get_restaurant_id(token, sb)
 
-        movements_ref = db.collection("restaurants").document(restaurant_id).collection("movements")
-        data = movement.model_dump()
-        data["timestamp"] = datetime.now().isoformat()
-        data["restaurant_id"] = restaurant_id
-        data["user_id"] = user.get("uid")
+        # Obtener nombre del producto
+        prod = sb.table("products")\
+            .select("name, unit")\
+            .eq("id", movement.product_id)\
+            .eq("restaurant_id", restaurant_id)\
+            .single()\
+            .execute()
 
-        doc_ref = movements_ref.add(data)
+        if not prod.data:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-        # Update product quantity
-        product_ref = db.collection("restaurants").document(restaurant_id).collection("products").document(movement.product_id)
-        product_doc = product_ref.get()
-        if product_doc.exists:
-            current_qty = product_doc.to_dict().get("quantity", 0)
-            if movement.movement_type == "entrada":
-                new_qty = current_qty + movement.quantity
-            elif movement.movement_type == "salida":
-                new_qty = max(0, current_qty - movement.quantity)
-            else:  # ajuste
-                new_qty = movement.quantity
-            product_ref.update({"quantity": new_qty, "last_updated": datetime.now().isoformat()})
+        data = {
+            "restaurant_id": restaurant_id,
+            "product_id": movement.product_id,
+            "product_name": prod.data["name"],
+            "movement_type": movement.movement_type,
+            "quantity": movement.quantity,
+            "unit": prod.data["unit"],
+            "notes": movement.notes or "",
+            "user_id": user_id,
+        }
 
-        return {"message": "Movimiento registrado", "id": doc_ref[1].id}
+        result = sb.table("movements").insert(data).execute()
+        return {"message": "Movimiento registrado", "id": result.data[0]["id"]}
     except HTTPException:
         raise
     except Exception as e:
@@ -161,11 +195,53 @@ async def record_movement(movement: StockMovement, authorization: Optional[str] 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_demo_products():
+@router.get("/movements")
+async def get_movements(
+    limit: int = 50,
+    product_id: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+):
+    sb = get_supabase()
+    if not sb:
+        return []
+
+    token = _extract_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token requerido")
+
+    try:
+        restaurant_id = _get_restaurant_id(token, sb)
+        query = sb.table("movements")\
+            .select("*")\
+            .eq("restaurant_id", restaurant_id)\
+            .order("created_at", desc=True)\
+            .limit(limit)
+
+        if product_id:
+            query = query.eq("product_id", product_id)
+
+        result = query.execute()
+        return result.data or []
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching movements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _demo_products():
+    now = datetime.now().isoformat()
     return [
-        {"id": "1", "name": "Pollo", "category": "Carnes", "quantity": 45, "unit": "kg", "min_threshold": 20, "max_capacity": 100, "price_per_unit": 8500, "supplier": "Carnes Premium", "last_updated": datetime.now().isoformat()},
-        {"id": "2", "name": "Res", "category": "Carnes", "quantity": 30, "unit": "kg", "min_threshold": 15, "max_capacity": 80, "price_per_unit": 12000, "supplier": "Carnes Premium", "last_updated": datetime.now().isoformat()},
-        {"id": "3", "name": "Tomates", "category": "Verduras", "quantity": 8, "unit": "kg", "min_threshold": 10, "max_capacity": 50, "price_per_unit": 2500, "supplier": "Verduras Frescas", "last_updated": datetime.now().isoformat()},
-        {"id": "4", "name": "Cebolla", "category": "Verduras", "quantity": 15, "unit": "kg", "min_threshold": 8, "max_capacity": 40, "price_per_unit": 1800, "supplier": "Verduras Frescas", "last_updated": datetime.now().isoformat()},
-        {"id": "5", "name": "Aceite de Oliva", "category": "Aceites", "quantity": 3, "unit": "L", "min_threshold": 5, "max_capacity": 20, "price_per_unit": 15000, "supplier": "Distribuidora Gourmet", "last_updated": datetime.now().isoformat()},
+        {"id": "1", "name": "Pollo", "category": "Carnes", "quantity": 45, "unit": "kg",
+         "min_threshold": 20, "max_capacity": 100, "price_per_unit": 8500,
+         "supplier": "Carnes Premium", "last_updated": now, "active": True},
+        {"id": "2", "name": "Res", "category": "Carnes", "quantity": 30, "unit": "kg",
+         "min_threshold": 15, "max_capacity": 80, "price_per_unit": 12000,
+         "supplier": "Carnes Premium", "last_updated": now, "active": True},
+        {"id": "3", "name": "Tomates", "category": "Verduras", "quantity": 8, "unit": "kg",
+         "min_threshold": 10, "max_capacity": 50, "price_per_unit": 2500,
+         "supplier": "Verduras Frescas", "last_updated": now, "active": True},
+        {"id": "4", "name": "Aceite vegetal", "category": "Aceites", "quantity": 3, "unit": "L",
+         "min_threshold": 5, "max_capacity": 20, "price_per_unit": 15000,
+         "supplier": "Gourmet Dist.", "last_updated": now, "active": True},
     ]

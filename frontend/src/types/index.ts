@@ -117,20 +117,23 @@ export interface CompanyModule {
 }
 
 export interface PlatformMetrics {
-  totalCompanies: number
-  totalUsers: number
-  activeCompanies: number
-  suspendedCompanies: number
-  newCompanies7d: number
-  newUsers7d: number
+  totalRestaurants: number
   totalProducts: number
   criticalProducts: number
-  topPlans: Array<{ plan: string; count: number }>
+  lowProducts: number
+  totalMovements: number
+  movements7d: number
+  newRestaurants7d: number
 }
 
 export interface MetricsHistory {
   date: string
-  totalCompanies: number
-  totalUsers: number
-  activeCompanies: number
+  movements: number
+}
+
+export interface AnalyticsData {
+  productsByStatus: Array<{ status: string; label: string; count: number; color: string }>
+  movementsByType: Array<{ type: string; label: string; total: number; color: string }>
+  dailyMovements: Array<{ date: string; count: number }>
+  perRestaurant: Array<{ restaurant_id: string; restaurant_name: string; products: number; critical: number }>
 }
