@@ -38,7 +38,7 @@ async def get_settings(authorization: Optional[str] = Header(None)):
         user_id = _get_user_id(authorization)
         result = sb.table("restaurants")\
             .select("name, address, phone, email, alert_threshold, "
-                    "notify_email, notify_whatsapp, auto_restock")\
+                    "notify_email, notify_whatsapp, auto_restock, plan")\
             .eq("owner_id", user_id)\
             .single()\
             .execute()
@@ -56,6 +56,7 @@ async def get_settings(authorization: Optional[str] = Header(None)):
             "notify_email":     data.get("notify_email", True),
             "notify_whatsapp":  data.get("notify_whatsapp", False),
             "auto_restock":     data.get("auto_restock", False),
+            "plan":             data.get("plan", "free"),
         }
     except HTTPException:
         raise

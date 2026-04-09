@@ -20,6 +20,9 @@ import AdminCompanies from './pages/admin/AdminCompanies'
 import AdminProducts from './pages/admin/AdminProducts'
 import AdminModules from './pages/admin/AdminModules'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
+import StaffJoin from './pages/staff/StaffJoin'
+import StaffLogin from './pages/staff/StaffLogin'
+import StaffHub from './pages/staff/StaffHub'
 
 function AppRoutes() {
   const { loading } = useAuth()
@@ -42,6 +45,11 @@ function AppRoutes() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/checkout" element={<Checkout />} />
+
+        {/* Staff routes (acceso por código) */}
+        <Route path="/staff/join" element={<StaffJoin />} />
+        <Route path="/staff/login" element={<StaffLogin />} />
+        <Route path="/staff" element={<StaffHub />} />
 
         {/* Admin routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

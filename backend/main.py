@@ -9,6 +9,8 @@ from supabase_service import get_supabase, is_supabase_configured
 from routes import auth, inventory, ai, settings as settings_router
 from routes.admin import router as admin_router
 from routes.payments import router as payments_router
+from routes.staff import router as staff_router
+from routes.orders import router as orders_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +55,8 @@ app.include_router(ai.router,              prefix="/api/v1")
 app.include_router(settings_router.router, prefix="/api/v1")
 app.include_router(admin_router,           prefix="/api/v1")
 app.include_router(payments_router,        prefix="/api/v1")
+app.include_router(staff_router,           prefix="/api/v1")
+app.include_router(orders_router,          prefix="/api/v1")
 
 
 @app.get("/")

@@ -401,7 +401,31 @@ async def list_users(
                 "status":       "suspended" if banned else "active",
                 "last_login":   str(getattr(u, "last_sign_in_at", "") or ""),
                 "created_at":   str(getattr(u, "created_at", "") or ""),
+                "plan":         "free",   # se enriquece abajo
+                "staff_count":  0,
             })
+
+        # Enriquecer con plan y staff_count desde restaurants / restaurant_staff
+        try:
+            rest_res = sb.table("restaurants").select("owner_id, plan").execute()
+            staff_count_res = sb.table("restaurant_staff").select("restaurant_id").execute()
+            rest_by_owner = {r["owner_id"]: r for r in (rest_res.data or [])}
+            # Contar staff por restaurant_id
+            from collections import Counter
+            rid_map = {r["owner_id"]: r["id"] for r in (rest_res.data or []) if "id" in r}
+            # Necesitamos también el id del restaurante
+            rest_full = sb.table("restaurants").select("id, owner_id, plan").execute()
+            staff_res2 = sb.table("restaurant_staff").select("restaurant_id").execute()
+            rid_to_plan = {r["id"]: r.get("plan", "free") for r in (rest_full.data or [])}
+            owner_to_rid = {r["owner_id"]: r["id"] for r in (rest_full.data or [])}
+            staff_counter = Counter(s["restaurant_id"] for s in (staff_res2.data or []))
+            for u in result:
+                rid = owner_to_rid.get(u["id"])
+                if rid:
+                    u["plan"] = rid_to_plan.get(rid, "free")
+                    u["staff_count"] = staff_counter.get(rid, 0)
+        except Exception:
+            pass  # Si falla el enriquecimiento, devolvemos igual
 
         offset = (page - 1) * limit
         return {"items": result[offset:offset+limit], "total": len(result), "page": page, "limit": limit}
@@ -685,5 +709,99 @@ async def toggle_module(company_id: str, module_key: str, body: ModuleToggle, ad
             "updated_at": now,
         }).execute()
         return result.data[0] if result.data else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── RESTAURANT MODULES (nueva tabla restaurant_modules) ──────────────────────
+
+AVAILABLE_MODULES = [
+    {"module_key": "orders",    "display_name": "Gestión de Órdenes",  "description": "Flujo mesero → cocina → caja",     "icon": "clipboard-list", "plan_required": "free"},
+    {"module_key": "staff",     "display_name": "Gestión de Personal",  "description": "Roles e invitaciones para staff",  "icon": "users",          "plan_required": "pro"},
+    {"module_key": "ai",        "display_name": "IA & Predicciones",    "description": "Insights con inteligencia artificial", "icon": "brain",       "plan_required": "pro"},
+    {"module_key": "analytics", "display_name": "Analíticas",           "description": "Reportes y gráficas avanzadas",    "icon": "bar-chart-2",    "plan_required": "pro"},
+    {"module_key": "payments",  "display_name": "Pasarela de Pagos",    "description": "Cobros con Stripe",                "icon": "credit-card",    "plan_required": "enterprise"},
+]
+
+
+@router.get("/restaurants/{restaurant_id}/modules")
+async def get_restaurant_modules(restaurant_id: str, admin=Depends(verify_admin_token)):
+    """Lista módulos disponibles con su estado habilitado/deshabilitado para un restaurante."""
+    sb = get_supabase()
+    if sb is None:
+        return [{"module_key": m["module_key"], "enabled": m["module_key"] == "orders", **m} for m in AVAILABLE_MODULES]
+    try:
+        res = sb.table("restaurant_modules").select("module_key, enabled").eq("restaurant_id", restaurant_id).execute()
+        state = {row["module_key"]: row["enabled"] for row in (res.data or [])}
+        return [
+            {**m, "enabled": state.get(m["module_key"], False)}
+            for m in AVAILABLE_MODULES
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/restaurants/{restaurant_id}/modules/{module_key}")
+async def toggle_restaurant_module(
+    restaurant_id: str,
+    module_key: str,
+    body: ModuleToggle,
+    admin=Depends(verify_admin_token),
+):
+    """Habilita o deshabilita un módulo para un restaurante específico."""
+    sb = get_supabase()
+    now = datetime.now().isoformat()
+    if sb is None:
+        return {"restaurant_id": restaurant_id, "module_key": module_key, "enabled": body.enabled}
+    try:
+        result = sb.table("restaurant_modules").upsert({
+            "restaurant_id": restaurant_id,
+            "module_key": module_key,
+            "enabled": body.enabled,
+            "updated_at": now,
+        }, on_conflict="restaurant_id,module_key").execute()
+        return result.data[0] if result.data else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── PLAN / SUBSCRIPTION (admin can change restaurant plan) ──────────────────
+
+class PlanUpdate(BaseModel):
+    plan: str  # free | pro | enterprise
+
+
+@router.put("/restaurants/{restaurant_id}/plan")
+async def update_restaurant_plan(restaurant_id: str, body: PlanUpdate, admin=Depends(verify_admin_token)):
+    """Super admin cambia el plan de un restaurante."""
+    if body.plan not in ("free", "pro", "enterprise"):
+        raise HTTPException(status_code=400, detail="Plan inválido. Opciones: free, pro, enterprise")
+    sb = get_supabase()
+    if sb is None:
+        return {"restaurant_id": restaurant_id, "plan": body.plan}
+    try:
+        result = sb.table("restaurants").update({"plan": body.plan, "updated_at": datetime.now().isoformat()}).eq("id", restaurant_id).execute()
+        return result.data[0] if result.data else {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/restaurants/{restaurant_id}/staff")
+async def get_restaurant_staff_admin(restaurant_id: str, admin=Depends(verify_admin_token)):
+    """Super admin: ver el personal de un restaurante con sus códigos generados."""
+    sb = get_supabase()
+    if sb is None:
+        return {"staff": [], "invites": [], "staff_count": 0, "invite_count": 0}
+    try:
+        staff_res = sb.table("restaurant_staff").select("*").eq("restaurant_id", restaurant_id).execute()
+        invite_res = sb.table("staff_invites").select("*").eq("restaurant_id", restaurant_id).order("created_at", desc=True).execute()
+        staff = staff_res.data or []
+        invites = invite_res.data or []
+        return {
+            "staff": staff,
+            "invites": invites,
+            "staff_count": len(staff),
+            "invite_count": len(invites),
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

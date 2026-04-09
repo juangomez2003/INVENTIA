@@ -1,17 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Search, Edit3, Trash2, Power, PowerOff, X, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, Search, Edit3, Trash2, Power, PowerOff, X, AlertCircle, ChevronLeft, ChevronRight, Crown, Users2 } from 'lucide-react'
 import { adminService } from '../../services/adminService'
 import type { PlatformUser } from '../../types'
 
 const ROLE_BADGE: Record<string, { color: string }> = {
-  admin:   { color: '#5856d6' },
-  usuario: { color: '#0a84ff' },
-  empresa: { color: '#ff9f0a' },
+  admin:       { color: '#5856d6' },
+  usuario:     { color: '#0a84ff' },
+  empresa:     { color: '#ff9f0a' },
+  super_admin: { color: '#ff453a' },
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   active:    { label: 'Activo',     color: '#30d158' },
   suspended: { label: 'Suspendido', color: '#ff9f0a' },
+}
+
+const PLAN_BADGE: Record<string, { label: string; color: string }> = {
+  free:       { label: 'Gratuito',   color: '#636366' },
+  pro:        { label: 'Pro',        color: '#0a84ff' },
+  enterprise: { label: 'Enterprise', color: '#ff9f0a' },
 }
 
 const inputStyle: React.CSSProperties = {
@@ -128,7 +135,7 @@ export default function AdminUsers() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                {['Usuario', 'Empresa', 'Rol', 'Estado', 'Último acceso', 'Acciones'].map(h => (
+                {['Usuario', 'Rol', 'Plan', 'Personal', 'Estado', 'Último acceso', 'Acciones'].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -139,10 +146,13 @@ export default function AdminUsers() {
                   <div style={{ width: 24, height: 24, borderRadius: '50%', border: '3px solid var(--accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
                 </td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-3)', fontSize: 14 }}>No se encontraron usuarios</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-3)', fontSize: 14 }}>No se encontraron usuarios</td></tr>
               ) : users.map((u, i) => {
-                const roleBadge = ROLE_BADGE[u.role] || ROLE_BADGE.usuario
+                const roleBadge = ROLE_BADGE[(u as any).role] || ROLE_BADGE.usuario
                 const statusBadge = STATUS_BADGE[u.status] || STATUS_BADGE.active
+                const plan = (u as any).plan || 'free'
+                const staffCount = (u as any).staff_count || 0
+                const planBadge = PLAN_BADGE[plan] || PLAN_BADGE.free
                 return (
                   <tr
                     key={u.id}
@@ -161,9 +171,23 @@ export default function AdminUsers() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ ...tdStyle, fontSize: 13, color: 'var(--text-2)' }}>{u.companyName || '—'}</td>
                     <td style={tdStyle}>
                       <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, textTransform: 'capitalize', background: `${roleBadge.color}20`, color: roleBadge.color }}>{u.role}</span>
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {plan !== 'free' && <Crown size={12} color={planBadge.color} />}
+                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: `${planBadge.color}20`, color: planBadge.color }}>{planBadge.label}</span>
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      {staffCount > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#0a84ff', fontSize: 13 }}>
+                          <Users2 size={14} /> <span>{staffCount} empleado{staffCount !== 1 ? 's' : ''}</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontSize: 13 }}>—</span>
+                      )}
                     </td>
                     <td style={tdStyle}>
                       <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: `${statusBadge.color}20`, color: statusBadge.color }}>{statusBadge.label}</span>
