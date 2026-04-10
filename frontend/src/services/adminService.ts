@@ -14,7 +14,7 @@ async function getAdminToken(): Promise<string> {
   return localStorage.getItem('inventia_admin_token') || DEMO_TOKEN
 }
 
-async function adminRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function adminRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getAdminToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

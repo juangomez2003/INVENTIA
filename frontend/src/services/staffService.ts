@@ -59,6 +59,13 @@ export async function removeStaff(staffId: string) {
   return apiFetch(`/staff/list/${staffId}`, { method: 'DELETE' })
 }
 
+// ─── Products (for mesero ordering) ──────────────────────────────────────────
+export async function getStaffProducts(): Promise<Array<{
+  id: string; name: string; unit: string; price_per_unit: number; quantity: number; category: string
+}>> {
+  return apiFetch('/staff/products')
+}
+
 // ─── Modules ──────────────────────────────────────────────────────────────────
 export async function getMyModules() {
   return apiFetch('/staff/modules')

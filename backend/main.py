@@ -39,9 +39,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# En producción en Vercel, el frontend y backend están en el mismo dominio → CORS no es necesario
-# pero lo habilitamos por si el frontend se sirve desde otro subdominio
-_origins = ["*"] if settings.app_env in ("development", "production") else settings.cors_origins_list
+_origins = (
+    ["*"]
+    if settings.app_env == "development"
+    else settings.cors_origins_list
+)
 
 app.add_middleware(
     CORSMiddleware,

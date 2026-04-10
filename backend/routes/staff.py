@@ -236,6 +236,18 @@ async def remove_staff(staff_id: str, ctx: dict = Depends(_get_current_staff)):
     return {"ok": True}
 
 
+# ─── Products (for staff ordering) ───────────────────────────────────────────
+
+@router.get("/products")
+async def get_staff_products(ctx: dict = Depends(_get_current_staff)):
+    """Retorna los productos activos del restaurante para que el mesero pueda crear órdenes."""
+    sb = get_supabase()
+    res = sb.table("products").select(
+        "id, name, unit, price_per_unit, quantity, category"
+    ).eq("restaurant_id", ctx["restaurant_id"]).eq("active", True).execute()
+    return res.data or []
+
+
 # ─── Modules ──────────────────────────────────────────────────────────────────
 
 @router.get("/modules")

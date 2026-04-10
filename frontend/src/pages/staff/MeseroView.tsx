@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2, Send, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
-import { listOrders, createOrder, type Order, type OrderItem } from '../../services/staffService'
-import { supabase } from '../../lib/supabase'
+import { listOrders, createOrder, getStaffProducts, type Order, type OrderItem } from '../../services/staffService'
 
 const STATUS_LABELS: Record<string, string> = {
   pending:    'Esperando cocina',
@@ -45,7 +44,7 @@ export default function MeseroView({ restaurantId }: { restaurantId: string }) {
     try {
       const [o, p] = await Promise.all([
         listOrders(),
-        supabase.from('products').select('id,name,unit,price_per_unit,quantity,category').eq('restaurant_id', restaurantId).eq('active', true).then(r => r.data || []),
+        getStaffProducts(),
       ])
       setOrders(o)
       setProducts(p as Product[])

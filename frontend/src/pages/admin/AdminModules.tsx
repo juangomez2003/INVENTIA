@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Puzzle, ClipboardList, Users, Brain, BarChart2, CreditCard, Check, Crown } from 'lucide-react'
-import { adminService } from '../../services/adminService'
+import { adminService, adminRequest } from '../../services/adminService'
 
 interface Restaurant { id: string; name: string; plan: string }
 interface Module {
@@ -30,18 +30,6 @@ const PLAN_LABELS: Record<string, string> = {
   free: 'Gratuito', pro: 'Pro', enterprise: 'Enterprise',
 }
 
-const ADMIN_TOKEN = 'demo-admin-token-inventia-2024'
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
-
-async function adminFetch(path: string, opts: RequestInit = {}) {
-  const res = await fetch(`${API}${path}`, {
-    ...opts,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ADMIN_TOKEN}`, ...(opts.headers || {}) },
-  })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json()
-}
-
 export default function AdminModules() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
@@ -61,7 +49,7 @@ export default function AdminModules() {
   useEffect(() => {
     if (!selectedId) return
     setLoadingMod(true)
-    adminFetch(`/admin/restaurants/${selectedId}/modules`)
+    adminRequest<Module[]>(`/admin/restaurants/${selectedId}/modules`)
       .then(setModules)
       .finally(() => setLoadingMod(false))
   }, [selectedId])
@@ -71,7 +59,7 @@ export default function AdminModules() {
   async function toggleModule(moduleKey: string, current: boolean) {
     setToggling(moduleKey)
     try {
-      await adminFetch(`/admin/restaurants/${selectedId}/modules/${moduleKey}`, {
+      await adminRequest(`/admin/restaurants/${selectedId}/modules/${moduleKey}`, {
         method: 'PUT',
         body: JSON.stringify({ enabled: !current }),
       })
@@ -85,7 +73,7 @@ export default function AdminModules() {
     if (!selectedId) return
     setPlanUpdating(true)
     try {
-      await adminFetch(`/admin/restaurants/${selectedId}/plan`, {
+      await adminRequest(`/admin/restaurants/${selectedId}/plan`, {
         method: 'PUT',
         body: JSON.stringify({ plan }),
       })

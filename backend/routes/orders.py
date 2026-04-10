@@ -142,7 +142,9 @@ async def create_order(body: OrderCreate, ctx: dict = Depends(_get_current_staff
     ]
     sb.table("order_items").insert(items_payload).execute()
 
-    return {**order_res.data[0], "order_items": items_payload}
+    # Fetch items back so the DB-generated subtotal is included
+    items_res = sb.table("order_items").select("*").eq("order_id", order_id).execute()
+    return {**order_res.data[0], "order_items": items_res.data or items_payload}
 
 
 @router.patch("/{order_id}/status")
