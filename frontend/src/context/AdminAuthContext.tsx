@@ -18,10 +18,10 @@ function isSuperAdmin(user: { user_metadata?: Record<string, unknown>; app_metad
   )
 }
 
-const DEMO_EMAIL = 'admin@inventia.com'
-const DEMO_PASSWORD = 'admin123'
+const DEMO_EMAIL = 'superadmin@inventia.com'
+const DEMO_PASSWORD = 'SuperAdmin2024!'
 const DEMO_TOKEN = 'demo-admin-token-inventia-2024'
-const DEMO_ADMIN: AdminUser = { id: 'demo-admin', email: 'admin@inventia.com', fullName: 'Super Admin', role: 'super_admin' }
+const DEMO_ADMIN: AdminUser = { id: 'demo-admin', email: 'superadmin@inventia.com', fullName: 'Super Admin', role: 'super_admin' }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
