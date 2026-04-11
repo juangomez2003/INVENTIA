@@ -16,6 +16,6 @@ export default function AdminProtectedRoute({ children }: { children: ReactNode 
     )
   }
 
-  if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />
+  if (!isAdminAuthenticated) return <Navigate to="/login" replace />
   return <>{children}</>
 }

@@ -13,7 +13,6 @@ import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import AIInsights from './pages/AIInsights'
 import Settings from './pages/Settings'
-import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminCompanies from './pages/admin/AdminCompanies'
@@ -52,7 +51,6 @@ function AppRoutes() {
         <Route path="/staff" element={<StaffHub />} />
 
         {/* Admin routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           element={
             <AdminProtectedRoute>
