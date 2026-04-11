@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<'super_admin' | 'user' | false>;
   logout: () => void;
   loading: boolean;
 }
@@ -77,12 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { subscription.unsubscribe(); };
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<'super_admin' | 'user' | false> => {
     // Demo credentials always work
     if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
       setUser(DEMO_USER);
       localStorage.setItem('inventia_user', JSON.stringify(DEMO_USER));
-      return true;
+      return 'user';
     }
 
     if (!isSupabaseConfigured || !supabase) return false;
@@ -93,8 +93,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Login error:', error?.message);
         return false;
       }
-      // onAuthStateChange will handle setUser
-      return true;
+      // Detect super_admin from Supabase metadata
+      const meta = data.user?.user_metadata || {};
+      const appMeta = data.user?.app_metadata || {};
+      const role = meta.role || appMeta.role || '';
+      if (role === 'super_admin') {
+        // Store admin session for the admin context
+        localStorage.setItem('inventia_admin_token', data.session.access_token);
+        return 'super_admin';
+      }
+      // onAuthStateChange will handle setUser for regular users
+      return 'user';
     } catch (err) {
       console.error('Login error:', err);
       return false;

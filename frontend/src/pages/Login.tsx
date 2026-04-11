@@ -36,8 +36,10 @@ export default function Login() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 600));
 
-    const success = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result === 'super_admin') {
+      navigate('/admin/dashboard');
+    } else if (result === 'user') {
       navigate('/dashboard');
     } else {
       setError('Credenciales incorrectas. Revisa los datos de prueba abajo.');
