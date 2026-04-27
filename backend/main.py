@@ -11,6 +11,7 @@ from routes.admin import router as admin_router
 from routes.payments import router as payments_router
 from routes.staff import router as staff_router
 from routes.orders import router as orders_router
+from routes.menu import router as menu_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,6 +62,7 @@ app.include_router(admin_router,           prefix="/api/v1")
 app.include_router(payments_router,        prefix="/api/v1")
 app.include_router(staff_router,           prefix="/api/v1")
 app.include_router(orders_router,          prefix="/api/v1")
+app.include_router(menu_router,            prefix="/api/v1")
 
 
 @app.get("/")

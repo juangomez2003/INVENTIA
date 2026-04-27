@@ -1,12 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Package, Brain, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, Brain, Settings, LogOut, UtensilsCrossed } from 'lucide-react';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/inventory',  icon: Package,         label: 'Inventario' },
+  { to: '/menu',       icon: UtensilsCrossed, label: 'Menú' },
   { to: '/ai-insights',icon: Brain,           label: 'IA Insights' },
   { to: '/settings',   icon: Settings,        label: 'Configuración' },
 ];

@@ -86,33 +86,59 @@ class OrderStatusUpdate(BaseModel):
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _deduct_inventory(sb, order_id: str, restaurant_id: str, table_number: int, user_id: str):
-    """Registra movimientos de salida por cada ítem vendido en la orden."""
+    """
+    Descuenta inventario al pagar una orden.
+    - Si el ítem tiene dish_id: descuenta los ingredientes del plato * cantidad pedida.
+    - Si tiene product_id directo: descuenta ese producto.
+    """
     items_res = sb.table("order_items").select("*").eq("order_id", order_id).execute()
     items = items_res.data or []
 
     movements = []
+    note_prefix = f"Venta - Mesa {table_number} (Orden {order_id[:8]})"
+
     for item in items:
-        if not item.get("product_id"):
+        qty_ordered = item.get("quantity", 1)
+
+        # — Plato con receta (dish_ingredients) —
+        if item.get("dish_id"):
+            ings_res = sb.table("dish_ingredients").select(
+                "quantity, unit, product_id, products(name)"
+            ).eq("dish_id", item["dish_id"]).execute()
+
+            for ing in (ings_res.data or []):
+                movements.append({
+                    "restaurant_id": restaurant_id,
+                    "product_id": ing["product_id"],
+                    "product_name": ing["products"]["name"] if ing.get("products") else ing["product_id"],
+                    "movement_type": "salida",
+                    "quantity": round(ing["quantity"] * qty_ordered, 4),
+                    "unit": ing["unit"],
+                    "notes": f"{note_prefix} — {item['product_name']}",
+                    "user_id": user_id,
+                })
             continue
-        prod = sb.table("products").select("unit, quantity").eq(
-            "id", item["product_id"]
-        ).eq("restaurant_id", restaurant_id).maybe_single().execute()
-        if not prod.data:
-            continue
-        movements.append({
-            "restaurant_id": restaurant_id,
-            "product_id": item["product_id"],
-            "product_name": item["product_name"],
-            "movement_type": "salida",
-            "quantity": item["quantity"],
-            "unit": prod.data["unit"],
-            "notes": f"Venta - Mesa {table_number} (Orden {order_id[:8]})",
-            "user_id": user_id,
-        })
+
+        # — Producto directo (sin receta) —
+        if item.get("product_id"):
+            prod_res = sb.table("products").select("unit").eq(
+                "id", item["product_id"]
+            ).eq("restaurant_id", restaurant_id).limit(1).execute()
+            unit = prod_res.data[0]["unit"] if prod_res.data else item.get("unit", "u")
+            movements.append({
+                "restaurant_id": restaurant_id,
+                "product_id": item["product_id"],
+                "product_name": item["product_name"],
+                "movement_type": "salida",
+                "quantity": qty_ordered,
+                "unit": unit,
+                "notes": note_prefix,
+                "user_id": user_id,
+            })
 
     if movements:
         sb.table("movements").insert(movements).execute()
-        logger.info(f"Inventario descontado: {len(movements)} producto(s) de orden {order_id[:8]}")
+        logger.info(f"Inventario descontado: {len(movements)} movimiento(s) de orden {order_id[:8]}")
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────

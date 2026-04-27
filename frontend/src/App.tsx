@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import AIInsights from './pages/AIInsights'
 import Settings from './pages/Settings'
+import Menu from './pages/Menu'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
 import AdminCompanies from './pages/admin/AdminCompanies'
@@ -79,6 +80,7 @@ function AppRoutes() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/menu" element={<Menu />} />
           <Route path="/ai-insights" element={<AIInsights />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
