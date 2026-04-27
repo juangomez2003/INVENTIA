@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Plus, Download, X, Loader } from 'lucide-react';
 import InventoryTable from '../components/InventoryTable';
-import { getStockStatus } from '../data/mockData';
+import { getStockStatus } from '../utils/stockUtils';
 import { inventoryService } from '../services/inventoryService';
 import type { Product } from '../types';
 

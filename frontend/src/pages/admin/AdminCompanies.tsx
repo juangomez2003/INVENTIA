@@ -196,7 +196,7 @@ export default function AdminCompanies() {
                         </div>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>{c.name}</p>
-                          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 1 }}>{c.firebaseUid ? `ID: ${c.firebaseUid.slice(0, 8)}…` : 'Sin Firebase'}</p>
+                          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 1 }}>{c.ownerEmail}</p>
                         </div>
                       </div>
                     </td>

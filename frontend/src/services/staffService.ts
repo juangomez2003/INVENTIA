@@ -1,8 +1,15 @@
 import { supabase } from '../lib/supabase'
+import { getStaffAuthHeader } from '../lib/staffSession'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
 async function authHeaders(): Promise<Record<string, string>> {
+  // Staff session token (acceso por código) tiene prioridad
+  const staffHeader = getStaffAuthHeader()
+  if (staffHeader) {
+    return { Authorization: staffHeader, 'Content-Type': 'application/json' }
+  }
+  // Fallback: sesión Supabase (cuentas registradas)
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token
   return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }

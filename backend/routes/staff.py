@@ -9,6 +9,8 @@ import string
 import logging
 
 from supabase_service import get_supabase
+from config import settings
+from services.staff_auth import create_staff_session_token, decode_staff_session_token
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 logger = logging.getLogger(__name__)
@@ -24,10 +26,26 @@ def _generate_code(length: int = 8) -> str:
 
 
 async def _get_current_staff(authorization: Optional[str] = Header(None)):
-    """Devuelve (user_id, restaurant_id, role) del staff autenticado."""
+    """Devuelve (user_id, restaurant_id, role, plan) del staff autenticado."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token requerido")
     token = authorization.split(" ")[1]
+
+    # Primero intentar staff session token (acceso por código, sin cuenta)
+    staff_payload = decode_staff_session_token(token, settings.secret_key)
+    if staff_payload:
+        rest_res = get_supabase().table("restaurants").select("plan").eq(
+            "id", staff_payload["restaurant_id"]
+        ).limit(1).execute()
+        plan = rest_res.data[0].get("plan", "free") if rest_res.data else "free"
+        return {
+            "user_id": f"code:{staff_payload['code_id']}",
+            "restaurant_id": staff_payload["restaurant_id"],
+            "role": staff_payload["role"],
+            "plan": plan,
+        }
+
+    # Fallback: Supabase auth (cuentas registradas)
     sb = get_supabase()
     try:
         res = sb.auth.get_user(token)
@@ -37,13 +55,11 @@ async def _get_current_staff(authorization: Optional[str] = Header(None)):
     except Exception:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-    # Buscar en restaurant_staff
     staff_res = sb.table("restaurant_staff").select(
         "restaurant_id, role, name, active"
     ).eq("user_id", user.id).eq("active", True).limit(1).execute()
 
     if not staff_res.data:
-        # Quizás es el owner
         rest_res = sb.table("restaurants").select("id, plan").eq("owner_id", user.id).limit(1).execute()
         if rest_res.data:
             return {
@@ -54,7 +70,6 @@ async def _get_current_staff(authorization: Optional[str] = Header(None)):
             }
         raise HTTPException(status_code=403, detail="No perteneces a ningún restaurante")
 
-    # Obtener plan del restaurante
     s = staff_res.data[0]
     rest_res = sb.table("restaurants").select("plan").eq("id", s["restaurant_id"]).limit(1).execute()
     plan = rest_res.data[0].get("plan", "free") if rest_res.data else "free"
@@ -90,6 +105,10 @@ class StaffJoin(BaseModel):
     password: str
 
 
+class CodeSessionRequest(BaseModel):
+    code: str
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("/me")
@@ -111,7 +130,7 @@ async def create_invite(body: InviteCreate, ctx: dict = Depends(_get_current_sta
     # Generar código único
     for _ in range(5):
         code = _generate_code()
-        existing = sb.table("staff_invites").select("id").eq("code", code).maybe_single().execute()
+        existing = sb.table("staff_invites").select("id").eq("code", code).limit(1).execute()
         if not existing.data:
             break
     else:
@@ -249,6 +268,51 @@ async def get_staff_products(ctx: dict = Depends(_get_current_staff)):
 
 
 # ─── Modules ──────────────────────────────────────────────────────────────────
+
+@router.post("/code-session")
+async def code_session(body: CodeSessionRequest):
+    """
+    Acceso rápido por código: el staff ingresa su código de rol y obtiene
+    un token de sesión válido por 16 horas (un turno). Sin crear cuenta.
+    """
+    sb = get_supabase()
+    code = body.code.upper().strip()
+
+    invite_res = sb.table("staff_invites").select("*").eq("code", code).limit(1).execute()
+    if not invite_res.data:
+        raise HTTPException(status_code=404, detail="Código inválido")
+
+    inv = invite_res.data[0]
+
+    expires_at = inv.get("expires_at")
+    if expires_at:
+        from datetime import datetime, timezone
+        expires = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if expires < datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=410,
+                detail="El código ha expirado. Solicita uno nuevo al administrador."
+            )
+
+    rest_res = sb.table("restaurants").select("id, name").eq(
+        "id", inv["restaurant_id"]
+    ).limit(1).execute()
+    restaurant = rest_res.data[0] if rest_res.data else {}
+
+    session_token = create_staff_session_token(
+        role=inv["role"],
+        restaurant_id=inv["restaurant_id"],
+        code_id=inv["id"],
+        secret=settings.secret_key,
+    )
+
+    return {
+        "session_token": session_token,
+        "role": inv["role"],
+        "restaurant_id": inv["restaurant_id"],
+        "restaurant_name": restaurant.get("name", "Restaurante"),
+    }
+
 
 @router.get("/modules")
 async def get_modules(ctx: dict = Depends(_get_current_staff)):

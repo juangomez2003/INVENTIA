@@ -5,6 +5,7 @@ import MeseroView from './MeseroView'
 import ChefView from './ChefView'
 import CajeroView from './CajeroView'
 import { supabase } from '../../lib/supabase'
+import { getStaffSession, clearStaffSession } from '../../lib/staffSession'
 import { ChefHat, LogOut } from 'lucide-react'
 
 interface StaffProfile {
@@ -12,6 +13,7 @@ interface StaffProfile {
   restaurant_id: string
   role: string
   plan: string
+  restaurant_name?: string
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -37,6 +39,21 @@ export default function StaffHub() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // Primero verificar si hay sesión por código (sin cuenta Supabase)
+    const codeSession = getStaffSession()
+    if (codeSession) {
+      setProfile({
+        user_id: 'code-session',
+        restaurant_id: codeSession.restaurant_id,
+        role: codeSession.role,
+        plan: 'unknown',
+        restaurant_name: codeSession.restaurant_name,
+      })
+      setLoading(false)
+      return
+    }
+
+    // Fallback: perfil via Supabase auth
     getMyStaffProfile()
       .then(p => {
         if (p.role === 'owner') {
@@ -46,14 +63,15 @@ export default function StaffHub() {
         }
       })
       .catch(() => {
-        setError('No tienes acceso. Verifica tu cuenta.')
+        setError('No tienes acceso. Verifica tu código o cuenta.')
       })
       .finally(() => setLoading(false))
   }, [])
 
   async function handleLogout() {
+    clearStaffSession()
     await supabase.auth.signOut()
-    navigate('/staff/login')
+    navigate('/staff/access')
   }
 
   if (loading) return (
@@ -65,7 +83,12 @@ export default function StaffHub() {
   if (error || !profile) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', flexDirection: 'column', gap: 16 }}>
       <p style={{ color: '#ff453a' }}>{error || 'Perfil no encontrado'}</p>
-      <button onClick={handleLogout} style={{ color: '#636366', background: 'none', border: 'none', cursor: 'pointer' }}>Cerrar sesión</button>
+      <button
+        onClick={() => { clearStaffSession(); navigate('/staff/access') }}
+        style={{ color: '#636366', background: 'none', border: 'none', cursor: 'pointer' }}
+      >
+        Volver al inicio
+      </button>
     </div>
   )
 
@@ -77,7 +100,9 @@ export default function StaffHub() {
       <header style={{ background: '#1c1c1e', borderBottom: '1px solid #2c2c2e', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <ChefHat size={22} color="#30d158" />
-          <span style={{ color: '#fff', fontWeight: 600 }}>INVENTIA</span>
+          <span style={{ color: '#fff', fontWeight: 600 }}>
+            {profile.restaurant_name || 'INVENTIA'}
+          </span>
           <span style={{ background: roleColor + '22', color: roleColor, fontSize: 12, padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
             {ROLE_LABELS[profile.role] || profile.role}
           </span>

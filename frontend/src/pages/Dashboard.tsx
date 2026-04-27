@@ -5,7 +5,7 @@ import AlertsPanel from '../components/AlertsPanel';
 import AIRecommendations from '../components/AIRecommendations';
 import ConsumptionChart from '../components/ConsumptionChart';
 import TopProductsChart from '../components/TopProductsChart';
-import { getStockStatus } from '../data/mockData';
+import { getStockStatus } from '../utils/stockUtils';
 import { inventoryService } from '../services/inventoryService';
 import { aiService } from '../services/aiService';
 import type { Product, AIAlert, AIPrediction, WeeklyConsumption, TopProduct } from '../types';

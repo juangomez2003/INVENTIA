@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Store, Bell, Shield, Save, Check, Loader, Users, Plus, Trash2, Copy, RefreshCw, Lock } from 'lucide-react';
-import { defaultSettings } from '../data/mockData';
+import { defaultSettings } from '../utils/stockUtils';
 import { api } from '../services/api';
 import type { RestaurantSettings } from '../types';
 import { generateInviteCode, listInvites, deleteInvite, listStaff, removeStaff } from '../services/staffService';

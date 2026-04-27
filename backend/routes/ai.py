@@ -5,14 +5,14 @@ import logging
 
 from supabase_service import get_supabase, verify_supabase_token
 from services.ai_service import predict_restock, generate_alerts, get_demo_predictions
+from utils.auth import extract_token
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 logger = logging.getLogger(__name__)
 
 
-def _extract_token(authorization: Optional[str]) -> Optional[str]:
-    if authorization and authorization.startswith("Bearer "):
-        return authorization.split(" ")[1]
+def _extract_token(authorization):  # alias para compatibilidad interna
+    return extract_token(authorization)
     return None
 
 

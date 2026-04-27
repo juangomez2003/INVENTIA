@@ -5,7 +5,6 @@ import logging
 
 from middleware.admin_auth import verify_admin_token
 from supabase_service import get_supabase
-from firebase_service import get_db
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -462,7 +461,7 @@ async def delete_user(user_id: str, admin=Depends(verify_admin_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ─── PRODUCTS (cross-tenant read from Firestore) ──────────────────────────────
+# ─── PRODUCTS (cross-tenant read from Supabase) ────────────────────────────────
 
 @router.get("/products")
 async def list_all_products(
@@ -471,9 +470,8 @@ async def list_all_products(
     limit: int = Query(50, ge=1, le=200),
     admin=Depends(verify_admin_token),
 ):
-    db = get_db()
-    if db is None:
-        # Demo products
+    sb = get_supabase()
+    if sb is None:
         products = [
             {"id": "p1", "name": "Pollo", "category": "Carnes", "quantity": 45, "unit": "kg", "min_threshold": 20, "max_capacity": 100, "company_id": "c1", "company_name": "La Casa del Sabor", "status": "normal"},
             {"id": "p2", "name": "Tomates", "category": "Verduras", "quantity": 8, "unit": "kg", "min_threshold": 10, "max_capacity": 50, "company_id": "c1", "company_name": "La Casa del Sabor", "status": "critical"},
@@ -487,39 +485,29 @@ async def list_all_products(
         return {"items": products[offset:offset+limit], "total": len(products), "page": page, "limit": limit}
 
     try:
-        # Get all restaurant docs
-        restaurants_ref = db.collection("restaurants")
+        query = sb.table("products").select(
+            "id, name, category, quantity, unit, min_threshold, max_capacity, active, restaurant_id, restaurants(name)"
+        ).eq("active", True)
+
         if company_id:
-            restaurant_docs = [db.collection("restaurants").document(company_id).get()]
-        else:
-            restaurant_docs = list(restaurants_ref.limit(50).stream())
+            query = query.eq("restaurant_id", company_id)
 
+        res = query.order("name").execute()
         all_products = []
-        for rest_doc in restaurant_docs:
-            if not rest_doc.exists:
-                continue
-            rest_data = rest_doc.to_dict() or {}
-            company_name = rest_data.get("name", rest_doc.id)
-            products_ref = db.collection("restaurants").document(rest_doc.id).collection("products")
-            for prod_doc in products_ref.stream():
-                p = prod_doc.to_dict()
-                p["id"] = prod_doc.id
-                p["company_id"] = rest_doc.id
-                p["company_name"] = company_name
-                qty = p.get("quantity", 0)
-                min_t = p.get("min_threshold", 0)
-                max_c = p.get("max_capacity", 1)
-                pct = qty / max_c * 100 if max_c > 0 else 100
-                p["status"] = "critical" if qty <= min_t else ("low" if pct <= 30 else "normal")
-                all_products.append(p)
+        for p in (res.data or []):
+            qty = p.get("quantity", 0)
+            min_t = p.get("min_threshold", 0)
+            max_c = p.get("max_capacity", 1)
+            pct = qty / max_c * 100 if max_c > 0 else 100
+            restaurant = p.pop("restaurants", {}) or {}
+            p["company_id"] = p.pop("restaurant_id", "")
+            p["company_name"] = restaurant.get("name", "")
+            p["status"] = "critical" if qty <= min_t else ("low" if pct <= 30 else "normal")
+            all_products.append(p)
 
+        total = len(all_products)
         offset = (page - 1) * limit
-        return {
-            "items": all_products[offset:offset+limit],
-            "total": len(all_products),
-            "page": page,
-            "limit": limit,
-        }
+        return {"items": all_products[offset:offset + limit], "total": total, "page": page, "limit": limit}
     except Exception as e:
         logger.error(f"Error fetching admin products: {e}")
         raise HTTPException(status_code=500, detail=str(e))

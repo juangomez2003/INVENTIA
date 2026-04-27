@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 import type { Product } from '../types';
-import { getStockStatus, stockStatusConfig } from '../data/mockData';
+import { getStockStatus, stockStatusConfig } from '../utils/stockUtils';
 
 interface InventoryTableProps {
   products: Product[];

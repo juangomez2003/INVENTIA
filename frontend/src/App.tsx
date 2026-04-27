@@ -21,6 +21,7 @@ import AdminModules from './pages/admin/AdminModules'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import StaffJoin from './pages/staff/StaffJoin'
 import StaffLogin from './pages/staff/StaffLogin'
+import StaffAccess from './pages/staff/StaffAccess'
 import StaffHub from './pages/staff/StaffHub'
 
 function AppRoutes() {
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="/checkout" element={<Checkout />} />
 
         {/* Staff routes (acceso por código) */}
+        <Route path="/staff/access" element={<StaffAccess />} />
         <Route path="/staff/join" element={<StaffJoin />} />
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffHub />} />

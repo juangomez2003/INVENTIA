@@ -5,28 +5,17 @@ import logging
 
 from models import ProductCreate, ProductUpdate, StockMovement
 from supabase_service import get_supabase, verify_supabase_token
+from utils.auth import extract_token
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 logger = logging.getLogger(__name__)
-
-
-def _extract_token(authorization: Optional[str]) -> Optional[str]:
-    if authorization and authorization.startswith("Bearer "):
-        return authorization.split(" ")[1]
-    return None
 
 
 def _get_restaurant_id(token: str, sb) -> str:
     """Obtiene el restaurant_id del usuario autenticado."""
     payload = verify_supabase_token(token)
     user_id = payload["sub"]
-
-    result = sb.table("restaurants")\
-        .select("id")\
-        .eq("owner_id", user_id)\
-        .single()\
-        .execute()
-
+    result = sb.table("restaurants").select("id").eq("owner_id", user_id).single().execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Restaurante no encontrado")
     return result.data["id"]
@@ -38,7 +27,7 @@ async def get_products(authorization: Optional[str] = Header(None)):
     if not sb:
         return _demo_products()
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 
@@ -64,7 +53,7 @@ async def create_product(product: ProductCreate, authorization: Optional[str] = 
     if not sb:
         return {"id": "demo-new", **product.model_dump(), "last_updated": datetime.now().isoformat()}
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 
@@ -94,7 +83,7 @@ async def update_product(
     if not sb:
         return {"id": product_id, **product.model_dump(exclude_none=True)}
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 
@@ -125,7 +114,7 @@ async def delete_product(product_id: str, authorization: Optional[str] = Header(
     if not sb:
         return {"message": "Producto eliminado (demo mode)"}
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 
@@ -155,7 +144,7 @@ async def record_movement(movement: StockMovement, authorization: Optional[str] 
     if not sb:
         return {"message": "Movimiento registrado (demo mode)", "id": "demo-movement"}
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 
@@ -205,7 +194,7 @@ async def get_movements(
     if not sb:
         return []
 
-    token = _extract_token(authorization)
+    token = extract_token(authorization)
     if not token:
         raise HTTPException(status_code=401, detail="Token requerido")
 

@@ -7,6 +7,8 @@ from pydantic import BaseModel
 import logging
 
 from supabase_service import get_supabase
+from config import settings
+from services.staff_auth import decode_staff_session_token
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 logger = logging.getLogger(__name__)
@@ -18,6 +20,17 @@ async def _get_current_staff(authorization: Optional[str] = Header(None)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Token requerido")
     token = authorization.split(" ")[1]
+
+    # Primero intentar staff session token (acceso por código)
+    staff_payload = decode_staff_session_token(token, settings.secret_key)
+    if staff_payload:
+        return {
+            "user_id": f"code:{staff_payload['code_id']}",
+            "restaurant_id": staff_payload["restaurant_id"],
+            "role": staff_payload["role"],
+        }
+
+    # Fallback: Supabase auth (cuentas registradas)
     sb = get_supabase()
     try:
         res = sb.auth.get_user(token)
@@ -27,7 +40,6 @@ async def _get_current_staff(authorization: Optional[str] = Header(None)):
     except Exception:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-    # Staff member?
     staff_res = sb.table("restaurant_staff").select(
         "restaurant_id, role, active"
     ).eq("user_id", user.id).eq("active", True).limit(1).execute()
@@ -40,7 +52,6 @@ async def _get_current_staff(authorization: Optional[str] = Header(None)):
             "role": s["role"],
         }
 
-    # Owner?
     rest_res = sb.table("restaurants").select("id").eq("owner_id", user.id).limit(1).execute()
     if rest_res.data:
         return {
@@ -70,6 +81,38 @@ class OrderCreate(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: str  # in_kitchen | ready | paid | cancelled
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _deduct_inventory(sb, order_id: str, restaurant_id: str, table_number: int, user_id: str):
+    """Registra movimientos de salida por cada ítem vendido en la orden."""
+    items_res = sb.table("order_items").select("*").eq("order_id", order_id).execute()
+    items = items_res.data or []
+
+    movements = []
+    for item in items:
+        if not item.get("product_id"):
+            continue
+        prod = sb.table("products").select("unit, quantity").eq(
+            "id", item["product_id"]
+        ).eq("restaurant_id", restaurant_id).maybe_single().execute()
+        if not prod.data:
+            continue
+        movements.append({
+            "restaurant_id": restaurant_id,
+            "product_id": item["product_id"],
+            "product_name": item["product_name"],
+            "movement_type": "salida",
+            "quantity": item["quantity"],
+            "unit": prod.data["unit"],
+            "notes": f"Venta - Mesa {table_number} (Orden {order_id[:8]})",
+            "user_id": user_id,
+        })
+
+    if movements:
+        sb.table("movements").insert(movements).execute()
+        logger.info(f"Inventario descontado: {len(movements)} producto(s) de orden {order_id[:8]}")
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -142,7 +185,6 @@ async def create_order(body: OrderCreate, ctx: dict = Depends(_get_current_staff
     ]
     sb.table("order_items").insert(items_payload).execute()
 
-    # Fetch items back so the DB-generated subtotal is included
     items_res = sb.table("order_items").select("*").eq("order_id", order_id).execute()
     return {**order_res.data[0], "order_items": items_res.data or items_payload}
 
@@ -154,17 +196,13 @@ async def update_order_status(
     ctx: dict = Depends(_get_current_staff),
 ):
     """
-    Actualiza el estado de una orden según el rol:
-    - chef:   pending → in_kitchen, in_kitchen → ready
-    - cajero: ready → paid, cualquiera → cancelled
-    - mesero: pending → cancelled (solo sus propias)
-    - owner:  cualquier transición
+    Actualiza el estado de una orden según el rol.
+    Al pasar a 'paid', descuenta automáticamente el inventario.
     """
     sb = get_supabase()
     role = ctx["role"]
     new_status = body.status
 
-    # Validar rol vs transición permitida
     allowed = {
         "chef":   ["in_kitchen", "ready"],
         "cajero": ["paid", "cancelled"],
@@ -177,7 +215,6 @@ async def update_order_status(
             detail=f"El rol '{role}' no puede poner la orden en estado '{new_status}'"
         )
 
-    # Obtener orden actual
     order = sb.table("orders").select("*").eq("id", order_id).eq(
         "restaurant_id", ctx["restaurant_id"]
     ).maybe_single().execute()
@@ -185,15 +222,32 @@ async def update_order_status(
     if not order.data:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
 
-    # Mesero solo puede cancelar sus propias órdenes
     if role == "mesero" and order.data.get("created_by") != ctx["user_id"]:
         raise HTTPException(status_code=403, detail="Solo puedes cancelar tus propias órdenes")
+
+    # Verificar que no se pague dos veces
+    if new_status == "paid" and order.data.get("status") == "paid":
+        raise HTTPException(status_code=409, detail="Esta orden ya fue pagada")
 
     update_data: dict = {"status": new_status}
     if new_status == "paid":
         update_data["closed_by"] = ctx["user_id"]
 
     res = sb.table("orders").update(update_data).eq("id", order_id).execute()
+
+    # Descontar inventario al cobrar
+    if new_status == "paid":
+        try:
+            _deduct_inventory(
+                sb=sb,
+                order_id=order_id,
+                restaurant_id=ctx["restaurant_id"],
+                table_number=order.data["table_number"],
+                user_id=ctx["user_id"],
+            )
+        except Exception as e:
+            logger.error(f"Error descontando inventario para orden {order_id}: {e}")
+
     return res.data[0] if res.data else {"ok": True}
 
 
