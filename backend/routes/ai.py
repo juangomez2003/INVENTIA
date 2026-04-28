@@ -3,7 +3,8 @@ from typing import Optional
 from datetime import datetime
 import logging
 
-from supabase_service import get_supabase, verify_supabase_token
+from supabase_service import get_supabase
+from deps import get_restaurant_id
 from services.ai_service import predict_restock, generate_alerts, get_demo_predictions
 from utils.auth import extract_token
 
@@ -16,13 +17,6 @@ def _extract_token(authorization):  # alias para compatibilidad interna
     return None
 
 
-def _get_restaurant_id(token: str, sb) -> str:
-    payload = verify_supabase_token(token)
-    user_id = payload["sub"]
-    result = sb.table("restaurants").select("id").eq("owner_id", user_id).single().execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
-    return result.data["id"]
 
 
 @router.get("/predictions")

@@ -7,60 +7,10 @@ from pydantic import BaseModel
 import logging
 
 from supabase_service import get_supabase
-from config import settings
-from services.staff_auth import decode_staff_session_token
+from deps import get_staff_context
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 logger = logging.getLogger(__name__)
-
-
-# ─── Auth helper ──────────────────────────────────────────────────────────────
-
-async def _get_current_staff(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token requerido")
-    token = authorization.split(" ")[1]
-
-    # Primero intentar staff session token (acceso por código)
-    staff_payload = decode_staff_session_token(token, settings.secret_key)
-    if staff_payload:
-        return {
-            "user_id": f"code:{staff_payload['code_id']}",
-            "restaurant_id": staff_payload["restaurant_id"],
-            "role": staff_payload["role"],
-        }
-
-    # Fallback: Supabase auth (cuentas registradas)
-    sb = get_supabase()
-    try:
-        res = sb.auth.get_user(token)
-        user = res.user
-        if not user:
-            raise HTTPException(status_code=401, detail="Token inválido")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido")
-
-    staff_res = sb.table("restaurant_staff").select(
-        "restaurant_id, role, active"
-    ).eq("user_id", user.id).eq("active", True).limit(1).execute()
-
-    if staff_res.data:
-        s = staff_res.data[0]
-        return {
-            "user_id": user.id,
-            "restaurant_id": s["restaurant_id"],
-            "role": s["role"],
-        }
-
-    rest_res = sb.table("restaurants").select("id").eq("owner_id", user.id).limit(1).execute()
-    if rest_res.data:
-        return {
-            "user_id": user.id,
-            "restaurant_id": rest_res.data[0]["id"],
-            "role": "owner",
-        }
-
-    raise HTTPException(status_code=403, detail="No perteneces a ningún restaurante")
 
 
 # ─── Models ───────────────────────────────────────────────────────────────────
@@ -144,7 +94,7 @@ def _deduct_inventory(sb, order_id: str, restaurant_id: str, table_number: int, 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("")
-async def list_orders(ctx: dict = Depends(_get_current_staff)):
+async def list_orders(ctx: dict = Depends(get_staff_context)):
     """
     Retorna órdenes filtradas por rol:
     - mesero: sus propias órdenes activas (pending / in_kitchen)
@@ -173,7 +123,7 @@ async def list_orders(ctx: dict = Depends(_get_current_staff)):
 
 
 @router.post("")
-async def create_order(body: OrderCreate, ctx: dict = Depends(_get_current_staff)):
+async def create_order(body: OrderCreate, ctx: dict = Depends(get_staff_context)):
     """Mesero crea una orden nueva."""
     if ctx["role"] not in ("mesero", "owner"):
         raise HTTPException(status_code=403, detail="Solo los meseros pueden crear órdenes")
@@ -219,7 +169,7 @@ async def create_order(body: OrderCreate, ctx: dict = Depends(_get_current_staff
 async def update_order_status(
     order_id: str,
     body: OrderStatusUpdate,
-    ctx: dict = Depends(_get_current_staff),
+    ctx: dict = Depends(get_staff_context),
 ):
     """
     Actualiza el estado de una orden según el rol.
@@ -243,7 +193,7 @@ async def update_order_status(
 
     order = sb.table("orders").select("*").eq("id", order_id).eq(
         "restaurant_id", ctx["restaurant_id"]
-    ).maybe_single().execute()
+    ).limit(1).execute()
 
     if not order.data:
         raise HTTPException(status_code=404, detail="Orden no encontrada")
@@ -278,12 +228,12 @@ async def update_order_status(
 
 
 @router.get("/{order_id}")
-async def get_order(order_id: str, ctx: dict = Depends(_get_current_staff)):
+async def get_order(order_id: str, ctx: dict = Depends(get_staff_context)):
     """Detalle de una orden con sus items."""
     sb = get_supabase()
     res = sb.table("orders").select("*, order_items(*)").eq("id", order_id).eq(
         "restaurant_id", ctx["restaurant_id"]
-    ).maybe_single().execute()
+    ).limit(1).execute()
 
     if not res.data:
         raise HTTPException(status_code=404, detail="Orden no encontrada")

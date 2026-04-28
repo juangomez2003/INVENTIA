@@ -1,35 +1,19 @@
 """
-Menu — CRUD de platos + OCR scan desde imagen/PDF.
+Menu — CRUD de platos del menú + OCR scan desde imagen/PDF.
 """
-from fastapi import APIRouter, HTTPException, Depends, Header, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from typing import Optional, List
 from pydantic import BaseModel
+from datetime import datetime, timezone
 import logging
 
-from supabase_service import get_supabase, verify_supabase_token
-from utils.auth import extract_token
+from supabase_service import get_supabase
+from deps import get_restaurant_id
 
 router = APIRouter(prefix="/menu", tags=["menu"])
 logger = logging.getLogger(__name__)
 
-ALLOWED_TYPES = {
-    "image/jpeg", "image/jpg", "image/png", "image/webp",
-    "application/pdf",
-}
-
-
-# ─── Auth helper ──────────────────────────────────────────────────────────────
-
-def _get_restaurant_id(authorization: Optional[str]) -> str:
-    token = extract_token(authorization)
-    if not token:
-        raise HTTPException(status_code=401, detail="Token requerido")
-    sb = get_supabase()
-    payload = verify_supabase_token(token)
-    res = sb.table("restaurants").select("id").eq("owner_id", payload["sub"]).limit(1).execute()
-    if not res.data:
-        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
-    return res.data[0]["id"]
+ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"}
 
 
 # ─── Models ───────────────────────────────────────────────────────────────────
@@ -60,105 +44,89 @@ class DishesImport(BaseModel):
     dishes: List[DishCreate]
 
 
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _sync_ingredients(sb, dish_id: str, ingredients: List[IngredientIn]):
+    """Reemplaza los ingredientes de un plato."""
+    sb.table("dish_ingredients").delete().eq("dish_id", dish_id).execute()
+    if ingredients:
+        sb.table("dish_ingredients").insert([
+            {"dish_id": dish_id, "product_id": ing.product_id,
+             "quantity": ing.quantity, "unit": ing.unit}
+            for ing in ingredients
+        ]).execute()
+
+
+def _fetch_dish(sb, dish_id: str, restaurant_id: str) -> dict:
+    res = sb.table("dishes").select(
+        "*, dish_ingredients(*, products(name, unit))"
+    ).eq("id", dish_id).eq("restaurant_id", restaurant_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Plato no encontrado")
+    return res.data[0]
+
+
 # ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 @router.get("/dishes")
-async def list_dishes(authorization: Optional[str] = Header(None)):
-    restaurant_id = _get_restaurant_id(authorization)
+async def list_dishes(restaurant_id: str = Depends(get_restaurant_id)):
     sb = get_supabase()
     res = sb.table("dishes").select(
         "*, dish_ingredients(*, products(name, unit))"
-    ).eq("restaurant_id", restaurant_id).order("category").order("name").execute()
+    ).eq("restaurant_id", restaurant_id).eq("active", True).order("category").order("name").execute()
     return res.data or []
 
 
-@router.post("/dishes", status_code=201)
-async def create_dish(body: DishCreate, authorization: Optional[str] = Header(None)):
-    restaurant_id = _get_restaurant_id(authorization)
+@router.post("/dishes/import", status_code=201)
+async def import_dishes(body: DishesImport, restaurant_id: str = Depends(get_restaurant_id)):
+    """Guarda en lote los platos confirmados tras el scan OCR."""
     sb = get_supabase()
+    if not body.dishes:
+        raise HTTPException(status_code=400, detail="No se enviaron platos")
 
-    dish_res = sb.table("dishes").insert({
+    rows = [
+        {"restaurant_id": restaurant_id, "name": d.name,
+         "description": d.description or "", "category": d.category, "price": d.price}
+        for d in body.dishes
+    ]
+    res = sb.table("dishes").insert(rows).execute()
+    return {"imported": len(res.data or []), "dishes": res.data or []}
+
+
+@router.post("/dishes", status_code=201)
+async def create_dish(body: DishCreate, restaurant_id: str = Depends(get_restaurant_id)):
+    sb = get_supabase()
+    res = sb.table("dishes").insert({
         "restaurant_id": restaurant_id,
-        "name": body.name,
-        "description": body.description,
-        "category": body.category,
-        "price": body.price,
+        "name": body.name, "description": body.description,
+        "category": body.category, "price": body.price,
         "image_url": body.image_url,
     }).execute()
-
-    dish = dish_res.data[0]
-
+    dish = res.data[0]
     if body.ingredients:
-        sb.table("dish_ingredients").insert([
-            {"dish_id": dish["id"], "product_id": ing.product_id,
-             "quantity": ing.quantity, "unit": ing.unit}
-            for ing in body.ingredients
-        ]).execute()
-
+        _sync_ingredients(sb, dish["id"], body.ingredients)
     return dish
 
 
 @router.put("/dishes/{dish_id}")
 async def update_dish(
     dish_id: str, body: DishUpdate,
-    authorization: Optional[str] = Header(None)
+    restaurant_id: str = Depends(get_restaurant_id),
 ):
-    restaurant_id = _get_restaurant_id(authorization)
     sb = get_supabase()
-
     update_data = {k: v for k, v in body.model_dump(exclude={"ingredients"}).items() if v is not None}
     if update_data:
-        from datetime import datetime, timezone
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-        sb.table("dishes").update(update_data).eq("id", dish_id).eq(
-            "restaurant_id", restaurant_id
-        ).execute()
-
+        sb.table("dishes").update(update_data).eq("id", dish_id).eq("restaurant_id", restaurant_id).execute()
     if body.ingredients is not None:
-        sb.table("dish_ingredients").delete().eq("dish_id", dish_id).execute()
-        if body.ingredients:
-            sb.table("dish_ingredients").insert([
-                {"dish_id": dish_id, "product_id": ing.product_id,
-                 "quantity": ing.quantity, "unit": ing.unit}
-                for ing in body.ingredients
-            ]).execute()
-
-    res = sb.table("dishes").select(
-        "*, dish_ingredients(*, products(name, unit))"
-    ).eq("id", dish_id).limit(1).execute()
-    return res.data[0] if res.data else {}
+        _sync_ingredients(sb, dish_id, body.ingredients)
+    return _fetch_dish(sb, dish_id, restaurant_id)
 
 
 @router.delete("/dishes/{dish_id}", status_code=204)
-async def delete_dish(dish_id: str, authorization: Optional[str] = Header(None)):
-    restaurant_id = _get_restaurant_id(authorization)
+async def delete_dish(dish_id: str, restaurant_id: str = Depends(get_restaurant_id)):
     sb = get_supabase()
-    sb.table("dishes").update({"active": False}).eq("id", dish_id).eq(
-        "restaurant_id", restaurant_id
-    ).execute()
-
-
-# ─── Importar lote desde OCR ──────────────────────────────────────────────────
-
-@router.post("/dishes/import", status_code=201)
-async def import_dishes(body: DishesImport, authorization: Optional[str] = Header(None)):
-    """Guarda en lote los platos confirmados por el usuario tras el scan."""
-    restaurant_id = _get_restaurant_id(authorization)
-    sb = get_supabase()
-
-    created = []
-    for dish in body.dishes:
-        res = sb.table("dishes").insert({
-            "restaurant_id": restaurant_id,
-            "name": dish.name,
-            "description": dish.description or "",
-            "category": dish.category,
-            "price": dish.price,
-        }).execute()
-        if res.data:
-            created.append(res.data[0])
-
-    return {"imported": len(created), "dishes": created}
+    sb.table("dishes").update({"active": False}).eq("id", dish_id).eq("restaurant_id", restaurant_id).execute()
 
 
 # ─── OCR Scan ─────────────────────────────────────────────────────────────────
@@ -166,31 +134,21 @@ async def import_dishes(body: DishesImport, authorization: Optional[str] = Heade
 @router.post("/scan")
 async def scan_menu(
     file: UploadFile = File(...),
-    authorization: Optional[str] = Header(None),
+    restaurant_id: str = Depends(get_restaurant_id),
 ):
-    """
-    Recibe imagen (JPG/PNG/WEBP) o PDF del menú.
-    Devuelve lista de platos detectados para que el usuario confirme.
-    """
-    _get_restaurant_id(authorization)   # valida que sea owner
-
+    """Recibe imagen o PDF del menú físico y devuelve platos detectados para confirmar."""
     if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=415,
-            detail=f"Formato no soportado. Usa: JPG, PNG, WEBP o PDF."
-        )
+        raise HTTPException(status_code=415, detail="Formato no soportado. Usa: JPG, PNG, WEBP o PDF.")
 
     file_bytes = await file.read()
-    if len(file_bytes) > 20 * 1024 * 1024:   # 20 MB máx
+    if len(file_bytes) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Archivo demasiado grande (máx 20 MB)")
 
     try:
         from services.menu_ocr import scan_menu as ocr_scan
-        result = ocr_scan(file_bytes, file.content_type)
+        return ocr_scan(file_bytes, file.content_type)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         logger.error(f"OCR error: {e}")
         raise HTTPException(status_code=500, detail="Error al procesar el archivo")
-
-    return result

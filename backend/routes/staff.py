@@ -10,89 +10,18 @@ import logging
 
 from supabase_service import get_supabase
 from config import settings
-from services.staff_auth import create_staff_session_token, decode_staff_session_token
-
-router = APIRouter(prefix="/staff", tags=["staff"])
-logger = logging.getLogger(__name__)
-
-PAID_PLANS = {"pro", "premium", "enterprise"}
-
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+from services.staff_auth import create_staff_session_token
+from deps import get_staff_context, require_owner, require_paid
 
 def _generate_code(length: int = 8) -> str:
     chars = string.ascii_uppercase + string.digits
     return "".join(random.choices(chars, k=length))
 
 
-async def _get_current_staff(authorization: Optional[str] = Header(None)):
-    """Devuelve (user_id, restaurant_id, role, plan) del staff autenticado."""
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token requerido")
-    token = authorization.split(" ")[1]
+router = APIRouter(prefix="/staff", tags=["staff"])
+logger = logging.getLogger(__name__)
 
-    # Primero intentar staff session token (acceso por código, sin cuenta)
-    staff_payload = decode_staff_session_token(token, settings.secret_key)
-    if staff_payload:
-        rest_res = get_supabase().table("restaurants").select("plan").eq(
-            "id", staff_payload["restaurant_id"]
-        ).limit(1).execute()
-        plan = rest_res.data[0].get("plan", "free") if rest_res.data else "free"
-        return {
-            "user_id": f"code:{staff_payload['code_id']}",
-            "restaurant_id": staff_payload["restaurant_id"],
-            "role": staff_payload["role"],
-            "plan": plan,
-        }
-
-    # Fallback: Supabase auth (cuentas registradas)
-    sb = get_supabase()
-    try:
-        res = sb.auth.get_user(token)
-        user = res.user
-        if not user:
-            raise HTTPException(status_code=401, detail="Token inválido")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido")
-
-    staff_res = sb.table("restaurant_staff").select(
-        "restaurant_id, role, name, active"
-    ).eq("user_id", user.id).eq("active", True).limit(1).execute()
-
-    if not staff_res.data:
-        rest_res = sb.table("restaurants").select("id, plan").eq("owner_id", user.id).limit(1).execute()
-        if rest_res.data:
-            return {
-                "user_id": user.id,
-                "restaurant_id": rest_res.data[0]["id"],
-                "role": "owner",
-                "plan": rest_res.data[0].get("plan", "free"),
-            }
-        raise HTTPException(status_code=403, detail="No perteneces a ningún restaurante")
-
-    s = staff_res.data[0]
-    rest_res = sb.table("restaurants").select("plan").eq("id", s["restaurant_id"]).limit(1).execute()
-    plan = rest_res.data[0].get("plan", "free") if rest_res.data else "free"
-
-    return {
-        "user_id": user.id,
-        "restaurant_id": s["restaurant_id"],
-        "role": s["role"],
-        "plan": plan,
-    }
-
-
-def _require_owner(ctx: dict):
-    if ctx["role"] != "owner":
-        raise HTTPException(status_code=403, detail="Solo el propietario puede realizar esta acción")
-
-
-def _require_paid(ctx: dict):
-    if ctx.get("plan", "free") not in PAID_PLANS:
-        raise HTTPException(status_code=402, detail="Esta función requiere un plan de pago")
-
-
-# ─── Models ───────────────────────────────────────────────────────────────────
+# ─── Models# ─── Models ───────────────────────────────────────────────────────────────────
 
 class InviteCreate(BaseModel):
     role: str  # mesero | chef | cajero | inventario
@@ -112,16 +41,16 @@ class CodeSessionRequest(BaseModel):
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("/me")
-async def get_my_profile(ctx: dict = Depends(_get_current_staff)):
+async def get_my_profile(ctx: dict = Depends(get_staff_context)):
     """Retorna perfil del usuario autenticado (role, restaurant_id, plan)."""
     return ctx
 
 
 @router.post("/invites")
-async def create_invite(body: InviteCreate, ctx: dict = Depends(_get_current_staff)):
+async def create_invite(body: InviteCreate, ctx: dict = Depends(get_staff_context)):
     """Owner genera un código de invitación para un rol."""
-    _require_owner(ctx)
-    _require_paid(ctx)
+    require_owner(ctx)
+    require_paid(ctx)
 
     if body.role not in ("mesero", "chef", "cajero", "inventario"):
         raise HTTPException(status_code=400, detail="Rol inválido")
@@ -147,10 +76,10 @@ async def create_invite(body: InviteCreate, ctx: dict = Depends(_get_current_sta
 
 
 @router.get("/invites")
-async def list_invites(ctx: dict = Depends(_get_current_staff)):
+async def list_invites(ctx: dict = Depends(get_staff_context)):
     """Lista todos los códigos generados por el restaurante."""
-    _require_owner(ctx)
-    _require_paid(ctx)
+    require_owner(ctx)
+    require_paid(ctx)
 
     sb = get_supabase()
     res = sb.table("staff_invites").select("*").eq(
@@ -160,9 +89,9 @@ async def list_invites(ctx: dict = Depends(_get_current_staff)):
 
 
 @router.delete("/invites/{invite_id}")
-async def delete_invite(invite_id: str, ctx: dict = Depends(_get_current_staff)):
+async def delete_invite(invite_id: str, ctx: dict = Depends(get_staff_context)):
     """Elimina / revoca un código de invitación."""
-    _require_owner(ctx)
+    require_owner(ctx)
     sb = get_supabase()
     sb.table("staff_invites").delete().eq("id", invite_id).eq(
         "restaurant_id", ctx["restaurant_id"]
@@ -232,9 +161,9 @@ async def join_with_code(body: StaffJoin):
 
 
 @router.get("/list")
-async def list_staff(ctx: dict = Depends(_get_current_staff)):
+async def list_staff(ctx: dict = Depends(get_staff_context)):
     """Lista el personal activo del restaurante."""
-    _require_owner(ctx)
+    require_owner(ctx)
 
     sb = get_supabase()
     res = sb.table("restaurant_staff").select("*").eq(
@@ -244,9 +173,9 @@ async def list_staff(ctx: dict = Depends(_get_current_staff)):
 
 
 @router.delete("/list/{staff_id}")
-async def remove_staff(staff_id: str, ctx: dict = Depends(_get_current_staff)):
+async def remove_staff(staff_id: str, ctx: dict = Depends(get_staff_context)):
     """Desactiva un empleado del restaurante."""
-    _require_owner(ctx)
+    require_owner(ctx)
 
     sb = get_supabase()
     sb.table("restaurant_staff").update({"active": False}).eq("id", staff_id).eq(
@@ -258,7 +187,7 @@ async def remove_staff(staff_id: str, ctx: dict = Depends(_get_current_staff)):
 # ─── Products (for staff ordering) ───────────────────────────────────────────
 
 @router.get("/products")
-async def get_staff_products(ctx: dict = Depends(_get_current_staff)):
+async def get_staff_products(ctx: dict = Depends(get_staff_context)):
     """Retorna los productos activos del restaurante para que el mesero pueda crear órdenes."""
     sb = get_supabase()
     res = sb.table("products").select(
@@ -315,7 +244,7 @@ async def code_session(body: CodeSessionRequest):
 
 
 @router.get("/modules")
-async def get_modules(ctx: dict = Depends(_get_current_staff)):
+async def get_modules(ctx: dict = Depends(get_staff_context)):
     """Retorna los módulos habilitados del restaurante."""
     sb = get_supabase()
     res = sb.table("restaurant_modules").select("module_key, enabled").eq(
